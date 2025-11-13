@@ -28,7 +28,7 @@ object AppUtil {
     //helper function to convert time in mm:ss format
 
     fun formatTime (time : Long): String{
-        val minutes = time / 600000
+        val minutes = time / 60000
         val seconds = (time % 60000) / 1000
 
         return String.format("%02d:%02d", minutes,seconds)

@@ -84,8 +84,9 @@ class clockViewModel @Inject constructor(
     //flatMap latest helps in changing which timer flow is being observed
 
 
-    val player1Flow = combine(_player1Name, _playerTimerState1, _countDownTime1, _player1Moves, _microTime1
-    ) { name, state, countdowntime, microtime, moves ->
+    val player1Flow = combine(
+        _player1Name, _playerTimerState1, _countDownTime1, _player1Moves, _microTime1
+    ) { name, state, countdowntime, moves, microtime ->
         PlayerData(
             name = name,
             state = state,
@@ -94,8 +95,9 @@ class clockViewModel @Inject constructor(
             playerMoves = moves
         )
     }
-    val player2Flow = combine(_player2Name, _playerTimerState2, _countDownTime2, _player2Moves, _microTime2
-    ) { name, state, countdowntime, microtime, moves ->
+    val player2Flow = combine(
+        _player2Name, _playerTimerState2, _countDownTime2, _player2Moves, _microTime2
+    ) { name, state, countdowntime, moves, microtime ->
         PlayerData(
             name = name,
             state = state,
@@ -112,8 +114,9 @@ class clockViewModel @Inject constructor(
         _activePlayer
 
     ) { uiState, p1, p2, activePlayer ->
-        val (p1Name, p1State, t1,mt1, m1) = p1
-        val (p2Name, p2State, t2,mt2, m2) = p2
+
+        val (p1Name, p1State, t1, mt1, pm1) = p1
+        val (p2Name, p2State, t2, mt2, pm2) = p2
 
         uiState.copy(
             colorScheme1 = p1State.toColorScheme(),
@@ -125,8 +128,8 @@ class clockViewModel @Inject constructor(
             activePlayer = activePlayer,
             player1State = p1State,
             player2State = p2State,
-            player1Moves = m1,
-            player2Moves = m2,
+            player1Moves = pm1,
+            player2Moves = pm2,
             microTime1 = mt1,
             microTime2 = mt2
         )
@@ -162,7 +165,7 @@ class clockViewModel @Inject constructor(
 //            _colorScheme1.value = _playerTimerState1.value.toColorScheme()
             try {
                 playerOneJob = viewModelScope.launch(Dispatchers.Default) {
-                    stopWatch(_countDownTime1,_microTime1, _playerTimerState1)
+                    stopWatch(_countDownTime1, _microTime1, _playerTimerState1)
                 }
             } catch (e: Exception) {
                 Toast.makeText(
@@ -193,7 +196,7 @@ class clockViewModel @Inject constructor(
             )
             try {
                 playerTwoJob = viewModelScope.launch(Dispatchers.Default) {
-                    stopWatch(_countDownTime2,_microTime2, _playerTimerState2,)
+                    stopWatch(_countDownTime2, _microTime2, _playerTimerState2)
                 }
             } catch (e: Exception) {
                 Toast.makeText(
@@ -205,9 +208,6 @@ class clockViewModel @Inject constructor(
             }
         }
     }
-
-
-
 
     //for switching which countDown time is being listened to and being
     //decremented in the UI
@@ -264,12 +264,10 @@ class clockViewModel @Inject constructor(
 
                 when (Command.activatePlayer) {
                     ActivatePlayer.ONE -> {
-                        _activePlayer.value = ActivatePlayer.ONE
                         startPlayerOne()
                     }
 
                     ActivatePlayer.TWO -> {
-                        _activePlayer.value = ActivatePlayer.TWO
                         startPlayerTwo()
                     }
 
@@ -286,19 +284,24 @@ class clockViewModel @Inject constructor(
     //helper functions for the startPlayer one and Two
     private suspend fun stopWatch(
         countDownTime: MutableStateFlow<Long>, //either countdowntime one or two,
-        microTime : MutableStateFlow<Int>,
+        microTime: MutableStateFlow<Int>,
         playerState: MutableStateFlow<PlayerState>
     ) {
+        val delayTicker = 10L
         while (playerState.value == PlayerState.ACTIVE && countDownTime.value > 0) {
-            delay(1L) //delay for one millisecond
+            delay(delayTicker) //delay for one millisecond
             microTime.value -= 1
-            if (microTime.value <= 0){
-                countDownTime.value -= 1000L
+
+            if (microTime.value < 0) {
                 microTime.value = 99
+                countDownTime.value -= 1000L
             }
-        }
-        if (countDownTime.value <= 0) {
-            playerState.value = PlayerState.DEFEATED
+            //When time runs out
+            if (countDownTime.value <= 0) {
+                countDownTime.value = 0
+                playerState.value = PlayerState.DEFEATED
+                break
+            }
         }
 
     }
@@ -314,7 +317,6 @@ class clockViewModel @Inject constructor(
         inactivePlayerState: MutableStateFlow<PlayerState>,
         activeColor: MutableStateFlow<ColorScheme>,
         inactiveColor: MutableStateFlow<ColorScheme>
-
     ) {
         _activePlayer.value = activePlayer
         activePlayerState.value = PlayerState.ACTIVE
