@@ -164,10 +164,21 @@ fun playerContent(
     } else {
         state.countDownTime2
     }
+    var currentMicroSecond = if(playerType == PlayerType.ONE){
+        state.microTime1
+    }else{
+        state.microTime2
+    }
     var playerName = if (playerType == PlayerType.ONE) {
         state.player_One_Name
     } else {
         state.player_Two_Name
+    }
+    var playerMoves = if(playerType == PlayerType.ONE){
+        state.player1Moves
+    }
+    else{
+        state.player2Moves
     }
     Surface(
         modifier = Modifier
@@ -261,7 +272,7 @@ fun playerContent(
                 color = colorScheme.contentColor,
                 textAlign = TextAlign.Center,
                 fontSize = 90.sp,
-                text = "$currentTime"
+                text = currentTime
             )
 
             Text(
@@ -276,7 +287,7 @@ fun playerContent(
                 color = colorScheme.contentColor,
                 textAlign = TextAlign.Center,
                 fontSize = 70.sp,
-                text = "microseconds"
+                text = "$currentMicroSecond"
             )
 
             Text(
@@ -286,7 +297,7 @@ fun playerContent(
                 color = colorScheme.contentColor,
                 textAlign = TextAlign.Right,
                 fontSize = 35.sp,
-                text = "Moves: $moveCounter"
+                text = "Moves: $playerMoves"
             )
         }
     }
