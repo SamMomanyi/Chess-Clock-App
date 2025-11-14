@@ -48,6 +48,7 @@ dependencies {
     //room and stuff
     implementation(libs.protolite.well.known.types)
     implementation(libs.androidx.ui.test.android)
+    implementation(libs.androidx.navigation.compose.android)
     val room_version = "2.7.2"
     //room
     implementation("androidx.room:room-runtime:2.5.0")

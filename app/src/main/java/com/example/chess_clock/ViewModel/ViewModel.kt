@@ -22,10 +22,12 @@ import com.example.chess_clock.model.database.clocks.ClocksDatabase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -80,8 +82,9 @@ class clockViewModel @Inject constructor(
     //even tho clicks only happen when a player is active.
     private val _activePlayer = MutableStateFlow<ActivatePlayer>(ActivatePlayer.NONE)
 
-
-    //flatMap latest helps in changing which timer flow is being observed
+    //event variables to send events to UI
+    private val eventChannel = Channel<HomeScreenEvent>()
+    val events = eventChannel.receiveAsFlow()
 
 
     val player1Flow = combine(
@@ -144,8 +147,7 @@ class clockViewModel @Inject constructor(
 
 
     private fun startPlayerOne() {
-//        _playerTimerState2.value = PlayerState.INACTIVE
-//        _colorScheme2.value = _playerTimerState2.value.toColorScheme()
+
         cancelJobs()
         Log.e("startPlayerone", "i'm alive 1 ")
         if (playerOneJob?.isActive != true) {
@@ -215,8 +217,6 @@ class clockViewModel @Inject constructor(
 
     fun CommandHandler(Command: HomeScreenCommand) {
         when (Command) {
-
-
             HomeScreenCommand.OpenSettings -> {
 
             }
@@ -224,27 +224,6 @@ class clockViewModel @Inject constructor(
             is HomeScreenCommand.OpenTimerSelection -> {
 
             }
-
-            HomeScreenCommand.RestartTimer -> {
-
-            }
-            //this is for changing the button name
-            is HomeScreenCommand.SetName -> {
-                when (Command.activatePlayer) {
-                    //this is means it is player 2 , whoose player dialog has been clicked
-                    ActivatePlayer.ONE -> {
-                        _player2Name.value = Command.playerName
-                    }
-                    //this means it is player 1
-                    ActivatePlayer.TWO -> {
-                        _player1Name.value = Command.playerName
-                    }
-
-                    ActivatePlayer.NONE -> Unit
-                }
-            }
-
-
             //we could always only listen for any state change from the UI then use it to alternate the jobs
             is HomeScreenCommand.PlayerClicked -> {
                 Log.e("PlayerCLicked", "I was clicked 2 ")
@@ -258,7 +237,7 @@ class clockViewModel @Inject constructor(
                     }
 
                     PlayerState.DEFEATED -> {
-                        Unit
+                        eventChannel.send(HomeScreenEvent.ShowNameDialog)
                     }
                 }
 
@@ -274,11 +253,27 @@ class clockViewModel @Inject constructor(
                     ActivatePlayer.NONE -> TODO()
                 }
             }
+
+            HomeScreenEvent.RestartTimer -> TODO()
         }
     }
 
-    fun EventHandler(Event: HomeScreenEvent) {
+   suspend fun EventHandler(event : HomeScreenEvent) {
+        when(event){
+            HomeScreenEvent.HideNameDialog -> {
 
+            }
+            is HomeScreenEvent.SetName -> {
+                eventChannel.send(HomeScreenEvent.SetName(_player1Name.value ))
+            }
+            HomeScreenEvent.ShowRestartTimerDialog -> {
+
+            }
+            HomeScreenEvent.ShowNameDialog -> {
+                eventChannel.send
+            }
+            is HomeScreenEvent.ShowTimeExpiredSnackBar -> TODO()
+        }
     }
 
     //helper functions for the startPlayer one and Two
@@ -300,6 +295,13 @@ class clockViewModel @Inject constructor(
             if (countDownTime.value <= 0) {
                 countDownTime.value = 0
                 playerState.value = PlayerState.DEFEATED
+                //show snackbar Using events // it think it works since the viewModel is aware of this
+                if(countDownTime.value == _countDownTime1.value){
+                    eventChannel.send(HomeScreenEvent.ShowTimeExpiredSnackBar("🤣😭${_player1Name.value} got flagged"))
+                }
+                else{
+                    eventChannel.send(HomeScreenEvent.ShowTimeExpiredSnackBar("🤣😭${_player2Name.value} got flagged"))
+                }
                 break
             }
         }

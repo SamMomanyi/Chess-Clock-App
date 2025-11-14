@@ -1,8 +1,6 @@
 package com.example.chess_clock.ui
 
-import android.media.SoundPool
 import android.util.Log
-import android.view.SoundEffectConstants
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -22,13 +20,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,21 +41,79 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.chess_clock.AppUtils.ActivatePlayer
 import com.example.chess_clock.AppUtils.HomeScreenCommand
 import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerState
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
+import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.AppUtils.toplayerState
-import com.example.chess_clock.R
 import com.example.chess_clock.ViewModel.clockViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
+import kotlin.reflect.KSuspendFunction1
 
 
 @Composable
 fun TimerScreen(modifier: Modifier, viewModel: clockViewModel = hiltViewModel()) {
 
-    val state = viewModel.state.collectAsState()
+    //navigation logic
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = routes.screenA,
+        builder = {
+            composable(routes.screenA){
+                TimerScreen(
+                    modifier = TODO(),
+                    viewModel = TODO()
+                )
+            }
+            composable(routes.screenB){
+                TimerSelection()
+            }
+            composable(routes.screenC){
+                SettingsScreen()
+            }
+        }
+    )
+    //CurrentPage logic
+    val state = viewModel.state.collectAsStateWithLifecycle()
+    val event = viewModel.events
+    val snackBarState = remember {
+        SnackbarHostState()
+    }
+
+    ObserverAsEvents(
+        event
+    ) { event ->
+        when(event){
+            is HomeScreenEvent.ShowRestartTimerDialog -> {
+
+            }
+
+            HomeScreenEvent.HideNameDialog -> TODO()
+            is HomeScreenEvent.SetName -> TODO()
+
+            is HomeScreenEvent.ShowTimeExpiredSnackBar -> {
+            snackBarState.showSnackbar(event.messagi)
+            }
+            //we call the dialog
+            HomeScreenEvent.ShowNameDialog -> {
+                editPlayerName()
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -74,6 +131,7 @@ fun TimerScreen(modifier: Modifier, viewModel: clockViewModel = hiltViewModel())
         )
         //where we keep the navigation
         Spacer(modifier = Modifier.weight(.10F))
+
         //player two activates player 1
         player(
             playerType = PlayerType.TWO,
@@ -94,7 +152,7 @@ fun player(
     activePlayer: ActivatePlayer,
     state: TimeScreenState,
     onCommand: (HomeScreenCommand) -> Unit,
-    onEvent: (HomeScreenEvent) -> Unit,
+    onEvent: KSuspendFunction1<HomeScreenEvent, Unit>,
     modifier: Modifier
 ) {
 
@@ -148,9 +206,9 @@ fun playerContent(
     playerState: PlayerState,
     state: TimeScreenState,
     cardEnabled: Boolean,
-    moveCounter : MutableState<Int>,
+    moveCounter: MutableState<Int>,
     onCommand: (HomeScreenCommand) -> Unit,
-    onEvent: (HomeScreenEvent) -> Unit,
+    onEvent: KSuspendFunction1<HomeScreenEvent, Unit>,
 
     ) {
 
@@ -220,8 +278,7 @@ fun playerContent(
                 )
                 Button(
                     onClick = {
-                        //calls to open that dialog
-                        onEvent(HomeScreenEvent.ShowNameDialog)
+                       HomeScreenEvent.ShowNameDialog
                     },
                     modifier = Modifier
                         .height(70.dp)
@@ -306,7 +363,7 @@ fun playerContent(
 
 @Composable
 fun editPlayerName(
-    onEvent: (HomeScreenCommand) -> Unit,
+    onEvent: (HomeScreenEvent) -> Unit,
     activatePlayer: ActivatePlayer
 ) {
 
@@ -345,7 +402,7 @@ fun editPlayerName(
                                 Toast.LENGTH_SHORT
                             )
                         } else {
-                            onEvent(HomeScreenCommand.SetName(it, activatePlayer))
+                            onEvent(HomeScreenEvent.SetName(it))
                         }
                     },
                     placeholder = {
@@ -366,3 +423,20 @@ fun editPlayerName(
     )
 }
 
+//Utility function to listen for events
+@Composable
+fun <T> ObserverAsEvents(
+    flow : Flow<T>,
+    key1 : Any? = null,
+    key2 : Any? = null,
+    onEvent: suspend (T) -> Unit
+){
+    val lifeCycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifeCycleOwner,key1,key2){
+        lifeCycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED){
+            withContext(Dispatchers.Main.immediate){
+                flow.collect(onEvent)
+            }
+        }
+    }
+}

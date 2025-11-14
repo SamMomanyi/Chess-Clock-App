@@ -12,7 +12,8 @@ runtimeLivedata = "1.9.0"
 ksp = "2.0.21-1.0.26" #ksp
 protoliteWellKnownTypes = "18.0.1" #for room
 hilt = "2.52"
-uiTestAndroid = "1.9.1" # latest stable as of now for hilt
+uiTestAndroid = "1.9.1"
+navigationComposeAndroid = "2.9.6" # latest stable as of now for hilt
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +37,7 @@ protolite-well-known-types = { group = "com.google.firebase", name = "protolite-
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 androidx-ui-test-android = { group = "androidx.compose.ui", name = "ui-test-android", version.ref = "uiTestAndroid" }
+androidx-navigation-compose-android = { group = "androidx.navigation", name = "navigation-compose-android", version.ref = "navigationComposeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
