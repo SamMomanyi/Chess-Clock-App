@@ -68,11 +68,13 @@ sealed interface HomeScreenCommand {
         val view: View
     ) : HomeScreenCommand
 
-    object OpenSettings : HomeScreenCommand
-    data class OpenTimerSelection(val timeFormat: ClockFormat) :
-        HomeScreenCommand // a data class since we will pass data and show the currently selected format
-
-
+    data class SettingsClicked() : HomeScreenCommand
+    data class TimerSelectionClicked() : HomeScreenCommand
+    data class SetNameClicked(val selectedPlayer : PlayerType) : HomeScreenCommand
+    data class ConfirmSetName(val name : String) : HomeScreenCommand
+    data class OpenTimerSelection(val timeFormat: ClockFormat) : HomeScreenCommand // a data class since we will pass data and show the currently selected format
+    object RestartTimerClicked : HomeScreenCommand
+    object ConfirmRestartClock : HomeScreenCommand
 }
 
 //from viewModel To UI
@@ -80,10 +82,10 @@ sealed interface HomeScreenEvent {
 
     data class ShowTimeExpiredSnackBar(val messagi: String) : HomeScreenEvent
     data class SetName(val playerName: String) : HomeScreenEvent //sets the name
-    object ShowNameDialog : HomeScreenEvent// opens the saveName dialog
+    object ShowNameDialog : HomeScreenEvent
     object HideNameDialog : HomeScreenEvent
-    object RestartTimer : HomeScreenCommand  //open the restart timer dialog
     object ShowRestartTimerDialog : HomeScreenEvent
+    object HideRestartTimerDialog : HomeScreenEvent
 
 }
 
@@ -132,7 +134,7 @@ data class PlayerData(
 
 //object routes for playerData
 object routes {
-    var screenA = "timer_Screen"
-    var screenB = "time_Selection"
-    var screenC = "settings_Screen"
+    var screenA = "Timer_Screen"
+    var screenB = "Timer_Selection"
+    var screenC = "Settings_Screen"
 }

@@ -237,7 +237,7 @@ class clockViewModel @Inject constructor(
                     }
 
                     PlayerState.DEFEATED -> {
-                        eventChannel.send(HomeScreenEvent.ShowNameDialog)
+                        Unit
                     }
                 }
 
@@ -270,12 +270,13 @@ class clockViewModel @Inject constructor(
 
             }
             HomeScreenEvent.ShowNameDialog -> {
-                eventChannel.send
+               Unit
             }
-            is HomeScreenEvent.ShowTimeExpiredSnackBar -> TODO()
+            is HomeScreenEvent.ShowTimeExpiredSnackBar -> {
+                Unit
+            }
         }
     }
-
     //helper functions for the startPlayer one and Two
     private suspend fun stopWatch(
         countDownTime: MutableStateFlow<Long>, //either countdowntime one or two,

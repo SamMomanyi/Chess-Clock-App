@@ -12,8 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.ViewModel.clockViewModel
+import com.example.chess_clock.ui.SettingsScreen
 import com.example.chess_clock.ui.TimerScreen
+import com.example.chess_clock.ui.TimerSelection
 import com.example.chess_clock.ui.theme.Chess_clockTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -25,7 +31,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             Chess_clockTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    TimerScreen(Modifier.padding(innerPadding))
+                    MainScreen(modifier = Modifier.padding(innerPadding))
+                  //  TimerScreen(Modifier.padding(innerPadding))
                 }
             }
         }
@@ -33,17 +40,33 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+fun MainScreen(modifier: Modifier ) {
+
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = routes.screenA,
+        builder = {
+            composable(routes.screenA){
+                TimerScreen(modifier = modifier,navController = navController)
+            }
+            composable(routes.screenB){
+                TimerSelection(navController = navController)
+            }
+            composable(routes.screenC){
+                SettingsScreen(navController = navController)
+            }
+
+        }
     )
+
 }
 
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     Chess_clockTheme {
-        Greeting("Android")
+
     }
 }
