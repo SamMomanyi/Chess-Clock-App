@@ -1,5 +1,6 @@
 package com.example.chess_clock.ui
 
+import android.health.connect.datatypes.units.Length
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -15,10 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AvTimer
 import androidx.compose.material.icons.filled.MoreTime
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -28,13 +29,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.example.chess_clock.AppUtils.ActivatePlayer
+import com.example.chess_clock.AppUtils.AppUtil
 import com.example.chess_clock.AppUtils.HomeScreenCommand
 import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerState
@@ -62,10 +64,11 @@ import com.example.chess_clock.AppUtils.TimeScreenState
 import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.AppUtils.toplayerState
 import com.example.chess_clock.ViewModel.clockViewModel
+import com.example.chess_clock.model.daggerHilt.di.AppContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlin.reflect.KSuspendFunction1
+import kotlin.time.Duration
 
 
 @Composable
@@ -86,27 +89,32 @@ fun TimerScreen(
         event
     ) { event ->
         when (event) {
-            is HomeScreenEvent.ShowRestartTimerDialog -> {
-
-            }
-
-            HomeScreenEvent.HideNameDialog -> {
-                Unit
-            }
-
             is HomeScreenEvent.SetName -> {
                 Unit
             }
 
             is HomeScreenEvent.ShowTimeExpiredSnackBar -> {
-                snackBarState.showSnackbar(event.messagi)
+               // snackBarState.showSnackbar(message = event.message,duration = SnackbarDuration.Short,actionLabel = "Next")
+                Toast.makeText(AppContext.getContext(),event.message,Toast.LENGTH_SHORT).show()
             }
-            //we call the dialog
-            HomeScreenEvent.ShowNameDialog -> {
-                Unit
+
+            is HomeScreenEvent.NavigateToTimerSelection -> {
+                event.navController.navigate(routes.screenB)
+            }
+
+            is HomeScreenEvent.ShowInvalidNameSnackBar -> {
+                Toast.makeText(AppContext.getContext(),event.message,Toast.LENGTH_SHORT).show()
+            //    snackBarState.showSnackbar(message = event.message,duration = SnackbarDuration.Short, actionLabel = "Invalid")
+            }
+
+            is HomeScreenEvent.NavigateToSettings -> {
+                event.navController.navigate(routes.screenC)
             }
         }
     }
+    //beginning of UI
+
+
     Column(
         modifier = modifier
     ) {
@@ -116,21 +124,19 @@ fun TimerScreen(
             activePlayer = ActivatePlayer.TWO,
             state = state.value,
             onCommand = viewModel::CommandHandler,
-            onEvent = viewModel::EventHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.45F)
         )
         //where we keep the navigation
         //  Spacer(modifier = Modifier.weight(.10F))
-        Navigation(navController = navController, modifier = Modifier.weight(0.10f))
+        Navigation(navController = navController, modifier = Modifier.weight(0.10f), onCommand = viewModel::CommandHandler,state = state.value)
         //player two activates player 1
         player(
             playerType = PlayerType.TWO,
             activePlayer = ActivatePlayer.ONE,
             state = state.value,
             onCommand = viewModel::CommandHandler,
-            onEvent = viewModel::EventHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.45F)
@@ -144,7 +150,6 @@ fun player(
     activePlayer: ActivatePlayer,
     state: TimeScreenState,
     onCommand: (HomeScreenCommand) -> Unit,
-    onEvent: KSuspendFunction1<HomeScreenEvent, Unit>,
     modifier: Modifier
 ) {
 
@@ -158,6 +163,19 @@ fun player(
 
     var playerState = playerType.toplayerState(state = state)
 
+    if(state.showNameDialog){
+        editPlayerNameDialog(
+            onCommand = onCommand,
+            state = state ,
+            playerType = playerType,
+        )
+    }
+    if(state.showRestartDialog){
+        restartClockDialog(
+            onCommand = onCommand,
+            state = state ,
+        )
+    }
     Card(
         onClick = {
             Log.e("PlayerCLicked", "I was clicked 1")
@@ -186,8 +204,6 @@ fun player(
             state = state,
             cardEnabled = (playerState == PlayerState.ACTIVE || state.activePlayer == ActivatePlayer.NONE),
             onCommand = onCommand,
-            moveCounter = MoveCounter,
-            onEvent = onEvent
         )
     }
 }
@@ -198,33 +214,31 @@ fun playerContent(
     playerState: PlayerState,
     state: TimeScreenState,
     cardEnabled: Boolean,
-    moveCounter: MutableState<Int>,
     onCommand: (HomeScreenCommand) -> Unit,
-    onEvent: KSuspendFunction1<HomeScreenEvent, Unit>,
 
     ) {
 
-    var colorScheme = if (playerType == PlayerType.ONE) {
+    val colorScheme =  if (playerType == PlayerType.ONE) {
         state.colorScheme1
     } else {
         state.colorScheme2
     }
-    var currentTime = if (playerType == PlayerType.ONE) {
+    val currentTime = if (playerType == PlayerType.ONE) {
         state.countDownTime1
     } else {
         state.countDownTime2
     }
-    var currentMicroSecond = if (playerType == PlayerType.ONE) {
+    val currentMicroSecond = if (playerType == PlayerType.ONE) {
         state.microTime1
     } else {
         state.microTime2
     }
-    var playerName = if (playerType == PlayerType.ONE) {
+    val playerName = if (playerType == PlayerType.ONE) {
         state.player_One_Name
     } else {
         state.player_Two_Name
     }
-    var playerMoves = if (playerType == PlayerType.ONE) {
+    val playerMoves = if (playerType == PlayerType.ONE) {
         state.player1Moves
     } else {
         state.player2Moves
@@ -269,7 +283,8 @@ fun playerContent(
                 )
                 Button(
                     onClick = {
-                        HomeScreenEvent.ShowNameDialog
+                        onCommand(HomeScreenCommand.SetNameClicked)
+                        Log.e("SetName","navigate to timerselection")
                     },
                     modifier = Modifier
                         .height(70.dp)
@@ -292,7 +307,9 @@ fun playerContent(
                 ) {
                     Text(
                         text = playerName,
-                        color = colorScheme.contentColor
+                        color = colorScheme.contentColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
                     )
                 }
                 colorScheme.activeIcon?.let { icon ->
@@ -351,71 +368,13 @@ fun playerContent(
     }
 }
 
-
 @Composable
-fun editPlayerName(
-    onEvent: (HomeScreenEvent) -> Unit,
-    activatePlayer: ActivatePlayer
+fun Navigation(
+    modifier: Modifier,
+    state : TimeScreenState,
+    navController: NavController,
+    onCommand: (HomeScreenCommand) -> Unit
 ) {
-
-    val context = LocalContext.current
-    var playerName = remember {
-        mutableStateOf("")
-    }
-
-    AlertDialog(
-        modifier = Modifier
-            .fillMaxWidth(),
-        onDismissRequest = {
-
-        },
-        title = {
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
-                text = "enter name"
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                TextField(
-                    value = playerName.value,
-                    //means we are changing the value of the playerButton name
-                    onValueChange = {
-                        if (it.isBlank()) {
-                            Toast.makeText(
-                                context,
-                                "Enter valid name",
-                                Toast.LENGTH_SHORT
-                            )
-                        } else {
-                            onEvent(HomeScreenEvent.SetName(it))
-                        }
-                    },
-                    placeholder = {
-                        Text(
-                            text = "playername",
-                            maxLines = 1
-                        )
-                    }
-                )
-            }
-        },
-        confirmButton = {
-
-        },
-        dismissButton = {
-
-        }
-    )
-}
-
-@Composable
-fun Navigation(modifier: Modifier, navController: NavController) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -423,12 +382,14 @@ fun Navigation(modifier: Modifier, navController: NavController) {
     ) {
         IconButton(
             onClick = {
-                navController.navigate(routes.screenB)
+               onCommand(HomeScreenCommand.OpenTimerSelection(navController = navController))
+                Log.e("Navigation","navigate to timerselection")
+                //  navController.navigate(routes.screenB)
             },
             modifier = Modifier
                 .weight(0.3333333f)
                 .fillMaxHeight(),
-            enabled = (true),
+            enabled = (state.activePlayer == ActivatePlayer.NONE),
             colors = IconButtonDefaults.iconButtonColors(),
         ) {
             Icon(
@@ -440,12 +401,12 @@ fun Navigation(modifier: Modifier, navController: NavController) {
 
         IconButton(
             onClick = {
-                navController.navigate(routes.screenC)
+                onCommand(HomeScreenCommand.OpenSettings(navController = navController))
             },
             modifier = Modifier
                 .weight(0.3333333f)
                 .fillMaxHeight(),
-            enabled = (true),
+            enabled = (state.activePlayer == ActivatePlayer.NONE),
             colors = IconButtonDefaults.iconButtonColors(),
         ) {
             Icon(
@@ -457,12 +418,12 @@ fun Navigation(modifier: Modifier, navController: NavController) {
 
         IconButton(
             onClick = {
-
+                onCommand(HomeScreenCommand.RestartTimerClicked)
             },
             modifier = Modifier
                 .weight(0.333333f)
                 .fillMaxHeight(),
-            enabled = (true),
+            enabled = (state.activePlayer == ActivatePlayer.NONE),
             colors = IconButtonDefaults.iconButtonColors(),
         ) {
             Icon(
@@ -477,20 +438,5 @@ fun Navigation(modifier: Modifier, navController: NavController) {
 }
 
 //Utility function to listen for events
-@Composable
-fun <T> ObserverAsEvents(
-    flow: Flow<T>,
-    key1: Any? = null,
-    key2: Any? = null,
-    onEvent: suspend (T) -> Unit
-) {
-    val lifeCycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifeCycleOwner, key1, key2) {
-        lifeCycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            withContext(Dispatchers.Main.immediate) {
-                flow.collect(onEvent)
-            }
-        }
-    }
-}
+
 

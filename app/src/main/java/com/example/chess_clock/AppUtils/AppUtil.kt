@@ -2,20 +2,18 @@ package com.example.chess_clock.AppUtils
 
 import android.content.Context
 import android.view.View
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.ui.theme.InactiveColorScheme
-import kotlinx.coroutines.flow.Flow
 
 object AppUtil {
     val predefinedClockFormats: List<ClockFormat> = mutableListOf(
         ClockFormat(
             id = 1,
             delay = null,
-            countDown = 600_000L,
+            countDown = 10_000L,
             increment = 2000L,
             microSecondCountDown = 100L
         ),
@@ -67,25 +65,38 @@ sealed interface HomeScreenCommand {
         val context: Context,
         val view: View
     ) : HomeScreenCommand
+    //navigation commands
+    data class OpenSettings(val navController: NavController): HomeScreenCommand
+    data class OpenTimerSelection(val navController: NavController) : HomeScreenCommand // a data class since we will pass data and show the currently selected format
 
-    data class SettingsClicked() : HomeScreenCommand
-    data class TimerSelectionClicked() : HomeScreenCommand
-    data class SetNameClicked(val selectedPlayer : PlayerType) : HomeScreenCommand
-    data class ConfirmSetName(val name : String) : HomeScreenCommand
-    data class OpenTimerSelection(val timeFormat: ClockFormat) : HomeScreenCommand // a data class since we will pass data and show the currently selected format
+    object PauseClockClicked : HomeScreenCommand
+    //setname commands
+    object SetNameClicked : HomeScreenCommand
+    object HideNameDialog : HomeScreenCommand
+    data class ConfirmSetName(val selectedPlayer : PlayerType,val name : String) : HomeScreenCommand
+    //restart timer commands
     object RestartTimerClicked : HomeScreenCommand
     object ConfirmRestartClock : HomeScreenCommand
+    object HideRestartTimerDialog : HomeScreenCommand
+
 }
 
 //from viewModel To UI
 sealed interface HomeScreenEvent {
 
-    data class ShowTimeExpiredSnackBar(val messagi: String) : HomeScreenEvent
+    data class ShowTimeExpiredSnackBar(val message: String) : HomeScreenEvent
     data class SetName(val playerName: String) : HomeScreenEvent //sets the name
-    object ShowNameDialog : HomeScreenEvent
-    object HideNameDialog : HomeScreenEvent
-    object ShowRestartTimerDialog : HomeScreenEvent
-    object HideRestartTimerDialog : HomeScreenEvent
+
+
+
+
+
+
+    //navigation events
+    data class NavigateToTimerSelection(val navController: NavController): HomeScreenEvent
+    data class NavigateToSettings(val navController: NavController) : HomeScreenEvent
+
+    data class ShowInvalidNameSnackBar (val message : String):  HomeScreenEvent
 
 }
 
@@ -107,7 +118,9 @@ data class TimeScreenState(
     val player2Moves: Int = 0,
     val microTime1: Int = 99,
     val microTime2: Int = 99,
-    //we could also try and pass color scheme as a state or something
+    //UI booleans
+    val showNameDialog : Boolean = false,
+    val showRestartDialog : Boolean = false
 )
 
 data class ColorScheme(

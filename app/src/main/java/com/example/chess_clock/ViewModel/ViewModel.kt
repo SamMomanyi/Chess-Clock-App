@@ -14,6 +14,7 @@ import com.example.chess_clock.AppUtils.HomeScreenCommand
 import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerData
 import com.example.chess_clock.AppUtils.PlayerState
+import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
 import com.example.chess_clock.R
 import com.example.chess_clock.model.daggerHilt.di.AppContext
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,7 +52,7 @@ class clockViewModel @Inject constructor(
     //call one suspend function with the active player, only switch state in the UI
 
     private val timeFormats: List<ClockFormat> = AppUtil.predefinedClockFormats
-    var timeFormat = timeFormats.get(index = 1)
+    val timeFormat = timeFormats.get(index = 0)
 
     //represents the current state of the UI HomeScreen
     //seems we will also need two states of countDownTime for player one and two since they are remembered
@@ -217,13 +219,6 @@ class clockViewModel @Inject constructor(
 
     fun CommandHandler(Command: HomeScreenCommand) {
         when (Command) {
-            HomeScreenCommand.OpenSettings -> {
-
-            }
-
-            is HomeScreenCommand.OpenTimerSelection -> {
-
-            }
             //we could always only listen for any state change from the UI then use it to alternate the jobs
             is HomeScreenCommand.PlayerClicked -> {
                 Log.e("PlayerCLicked", "I was clicked 2 ")
@@ -254,29 +249,80 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            HomeScreenEvent.RestartTimer -> TODO()
-        }
-    }
+            is HomeScreenCommand.OpenSettings -> {
+                eventChannel.trySend(HomeScreenEvent.NavigateToSettings(navController = Command.navController))
+            }
 
-   suspend fun EventHandler(event : HomeScreenEvent) {
-        when(event){
-            HomeScreenEvent.HideNameDialog -> {
+            is HomeScreenCommand.OpenTimerSelection -> {
+                eventChannel.trySend(HomeScreenEvent.NavigateToTimerSelection(navController = Command.navController))
+            }
 
+            HomeScreenCommand.RestartTimerClicked -> {
+                _uiState.update {
+                    it.copy(
+                        showRestartDialog = true
+                    )
+                }
             }
-            is HomeScreenEvent.SetName -> {
-                eventChannel.send(HomeScreenEvent.SetName(_player1Name.value ))
-            }
-            HomeScreenEvent.ShowRestartTimerDialog -> {
 
+            HomeScreenCommand.ConfirmRestartClock -> {
+                _uiState.update {
+                    it.copy(
+                        showRestartDialog = false
+                    )
+                }
+                restartTimers()
             }
-            HomeScreenEvent.ShowNameDialog -> {
-               Unit
+
+            HomeScreenCommand.HideRestartTimerDialog -> {
+                _uiState.update{
+                    it.copy(
+                        showRestartDialog = false
+                    )
+                }
             }
-            is HomeScreenEvent.ShowTimeExpiredSnackBar -> {
+
+            HomeScreenCommand.SetNameClicked -> {
+                _uiState.update {
+                    it.copy(
+                        showNameDialog = true
+                    )
+                }
+            }
+
+            is HomeScreenCommand.ConfirmSetName -> {
+                if (Command.name.isBlank()) {
+                    eventChannel.trySend(HomeScreenEvent.ShowInvalidNameSnackBar("😭Name Cannot be Empty"))
+                    return
+                }
+
+                else if (Command.selectedPlayer == PlayerType.ONE) {
+                       _player1Name.value = Command.name
+                } else {
+                     _player2Name.value = Command.name
+                }
+                _uiState.update{
+                    it.copy(
+                        showNameDialog = false
+                        )
+                }
+            }
+
+            HomeScreenCommand.HideNameDialog -> {
+                _uiState.update {
+                    it.copy(
+                        showNameDialog = false
+                    )
+                }
+            }
+
+            HomeScreenCommand.PauseClockClicked -> {
                 Unit
             }
+
         }
     }
+
     //helper functions for the startPlayer one and Two
     private suspend fun stopWatch(
         countDownTime: MutableStateFlow<Long>, //either countdowntime one or two,
@@ -296,13 +342,14 @@ class clockViewModel @Inject constructor(
             if (countDownTime.value <= 0) {
                 countDownTime.value = 0
                 playerState.value = PlayerState.DEFEATED
+                _activePlayer.value = ActivatePlayer.NONE
                 //show snackbar Using events // it think it works since the viewModel is aware of this
-                if(countDownTime.value == _countDownTime1.value){
-                    eventChannel.send(HomeScreenEvent.ShowTimeExpiredSnackBar("🤣😭${_player1Name.value} got flagged"))
+               val expiredMessage =  if (countDownTime == _countDownTime1) {
+                    "🤣😭${_player1Name.value} got flagged"
+                } else {
+                    "🤣😭${_player2Name.value} got flagged"
                 }
-                else{
-                    eventChannel.send(HomeScreenEvent.ShowTimeExpiredSnackBar("🤣😭${_player2Name.value} got flagged"))
-                }
+                eventChannel.trySend(HomeScreenEvent.ShowTimeExpiredSnackBar(expiredMessage))
                 break
             }
         }
@@ -335,6 +382,15 @@ class clockViewModel @Inject constructor(
         if (activePlayer.value != ActivatePlayer.NONE) {
             playerMoves.value += 1
         }
+    }
+
+    private fun restartTimers(){
+        cancelJobs()
+        _playerTimerState2.value = PlayerState.INACTIVE
+        _playerTimerState1.value = PlayerState.INACTIVE
+        _countDownTime1.value = timeFormat.countDown
+        _countDownTime2.value = timeFormat.countDown
+        _activePlayer.value = ActivatePlayer.NONE
     }
 
     override fun onCleared() {
