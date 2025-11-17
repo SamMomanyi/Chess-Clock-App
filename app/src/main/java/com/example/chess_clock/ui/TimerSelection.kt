@@ -6,7 +6,5 @@ import androidx.navigation.NavController
 
 @Composable
 fun TimerSelection(navController: NavController){
-    Text(
-        text = "Hello World"
-    )
+
 }

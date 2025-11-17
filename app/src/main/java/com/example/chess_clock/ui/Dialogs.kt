@@ -8,7 +8,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,13 +17,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.chess_clock.AppUtils.HomeScreenCommand
+import com.example.chess_clock.AppUtils.TimerScreenCommand
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
 
 @Composable
 fun editPlayerNameDialog(
-    onCommand: (HomeScreenCommand) -> Unit,
+    onCommand: (TimerScreenCommand) -> Unit,
     state: TimeScreenState,
     playerType: PlayerType,
     ) {
@@ -76,7 +75,7 @@ fun editPlayerNameDialog(
             Button(
                 onClick = {
                     onCommand(
-                        HomeScreenCommand.ConfirmSetName(
+                        TimerScreenCommand.ConfirmSetName(
                             selectedPlayer = playerType,
                             name = playerName
                         )
@@ -90,7 +89,7 @@ fun editPlayerNameDialog(
             Button(
                 onClick = {
                     onCommand (
-                        HomeScreenCommand.HideNameDialog
+                        TimerScreenCommand.HideNameDialog
                     )
                 }
             ){
@@ -102,9 +101,9 @@ fun editPlayerNameDialog(
 
 @Composable
 fun restartClockDialog(
-    onCommand: (HomeScreenCommand) -> Unit,
+    onCommand: (TimerScreenCommand) -> Unit,
 
-) {
+    ) {
 
     AlertDialog(
         modifier = Modifier
@@ -125,7 +124,7 @@ fun restartClockDialog(
             Button(
                 onClick = {
                     onCommand (
-                        HomeScreenCommand.ConfirmRestartClock
+                        TimerScreenCommand.ConfirmRestartClock
                     )
                 }
             ){
@@ -136,7 +135,7 @@ fun restartClockDialog(
             Button(
                 onClick = {
                     onCommand (
-                        HomeScreenCommand.HideRestartTimerDialog
+                        TimerScreenCommand.HideRestartTimerDialog
                     )
                 }
             ){
