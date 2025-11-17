@@ -112,9 +112,23 @@ fun TimerScreen(
             }
         }
     }
+    //dialog listeners
+    //this alltogether avoids calling the Alerts more than once at a time
+    if(state.value.showNameDialog){
+        editPlayerNameDialog(
+            onCommand = viewModel::CommandHandler,
+            state = state.value,
+            playerType = state.value.selectedPlayerForNameDialog,
+        )
+    }
+
+    if(state.value.showRestartDialog){
+        restartClockDialog(
+            onCommand = viewModel::CommandHandler,
+        )
+    }
+
     //beginning of UI
-
-
     Column(
         modifier = modifier
     ) {
@@ -163,19 +177,8 @@ fun player(
 
     var playerState = playerType.toplayerState(state = state)
 
-    if(state.showNameDialog){
-        editPlayerNameDialog(
-            onCommand = onCommand,
-            state = state ,
-            playerType = playerType,
-        )
-    }
-    if(state.showRestartDialog){
-        restartClockDialog(
-            onCommand = onCommand,
-            state = state ,
-        )
-    }
+
+
     Card(
         onClick = {
             Log.e("PlayerCLicked", "I was clicked 1")
@@ -283,7 +286,9 @@ fun playerContent(
                 )
                 Button(
                     onClick = {
-                        onCommand(HomeScreenCommand.SetNameClicked)
+                        onCommand(HomeScreenCommand.SetNameClicked(
+                            selectedPlayer = playerType
+                        ))
                         Log.e("SetName","navigate to timerselection")
                     },
                     modifier = Modifier
@@ -309,6 +314,7 @@ fun playerContent(
                         text = playerName,
                         color = colorScheme.contentColor,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
                         fontSize = 20.sp
                     )
                 }

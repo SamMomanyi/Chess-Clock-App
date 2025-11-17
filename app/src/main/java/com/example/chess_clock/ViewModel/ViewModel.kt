@@ -68,9 +68,9 @@ class clockViewModel @Inject constructor(
 
     private val _playerTimerState1 = MutableStateFlow<PlayerState>(PlayerState.INACTIVE)
     private val _playerTimerState2 = MutableStateFlow<PlayerState>(PlayerState.INACTIVE)
-
-    private val _player1Name = MutableStateFlow("")
-    private val _player2Name = MutableStateFlow("")
+//initial values to be shown in the UI before update since state overrides the current player_one_name value
+    private val _player1Name = MutableStateFlow<String>("player1")
+    private val _player2Name = MutableStateFlow<String>("player2")
 
     private val _player1Moves = MutableStateFlow<Int>(0)
     private val _player2Moves = MutableStateFlow<Int>(0)
@@ -275,14 +275,29 @@ class clockViewModel @Inject constructor(
             }
 
             HomeScreenCommand.HideRestartTimerDialog -> {
-                _uiState.update{
+                _uiState.update {
                     it.copy(
                         showRestartDialog = false
                     )
                 }
             }
 
-            HomeScreenCommand.SetNameClicked -> {
+            is HomeScreenCommand.SetNameClicked -> {
+                //check which player has clicked to show the name dialog
+                if (Command.selectedPlayer == PlayerType.ONE) {
+                    _uiState.update {
+                        it.copy(
+                            selectedPlayerForNameDialog = PlayerType.ONE
+                        )
+                    }
+                }
+                else {
+                    _uiState.update {
+                        it.copy(
+                            selectedPlayerForNameDialog = PlayerType.TWO
+                        )
+                    }
+                }
                 _uiState.update {
                     it.copy(
                         showNameDialog = true
@@ -291,20 +306,25 @@ class clockViewModel @Inject constructor(
             }
 
             is HomeScreenCommand.ConfirmSetName -> {
+                //choose which player to equate the name to
+                if (Command.selectedPlayer == PlayerType.ONE) {
+                    _player1Name.value = Command.name
+                }
+                else {
+                    _player2Name.value = Command.name
+                }
                 if (Command.name.isBlank()) {
                     eventChannel.trySend(HomeScreenEvent.ShowInvalidNameSnackBar("😭Name Cannot be Empty"))
                     return
-                }
-
-                else if (Command.selectedPlayer == PlayerType.ONE) {
-                       _player1Name.value = Command.name
+                } else if (Command.selectedPlayer == PlayerType.ONE) {
+                    _player1Name.value = Command.name
                 } else {
-                     _player2Name.value = Command.name
+                    _player2Name.value = Command.name
                 }
-                _uiState.update{
+                _uiState.update {
                     it.copy(
                         showNameDialog = false
-                        )
+                    )
                 }
             }
 
@@ -341,10 +361,11 @@ class clockViewModel @Inject constructor(
             //When time runs out
             if (countDownTime.value <= 0) {
                 countDownTime.value = 0
+                microTime.value = 0
                 playerState.value = PlayerState.DEFEATED
                 _activePlayer.value = ActivatePlayer.NONE
                 //show snackbar Using events // it think it works since the viewModel is aware of this
-               val expiredMessage =  if (countDownTime == _countDownTime1) {
+                val expiredMessage = if (countDownTime == _countDownTime1) {
                     "🤣😭${_player1Name.value} got flagged"
                 } else {
                     "🤣😭${_player2Name.value} got flagged"
@@ -384,7 +405,7 @@ class clockViewModel @Inject constructor(
         }
     }
 
-    private fun restartTimers(){
+    private fun restartTimers() {
         cancelJobs()
         _playerTimerState2.value = PlayerState.INACTIVE
         _playerTimerState1.value = PlayerState.INACTIVE

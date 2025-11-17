@@ -71,7 +71,7 @@ sealed interface HomeScreenCommand {
 
     object PauseClockClicked : HomeScreenCommand
     //setname commands
-    object SetNameClicked : HomeScreenCommand
+    data class SetNameClicked(val selectedPlayer : PlayerType) : HomeScreenCommand
     object HideNameDialog : HomeScreenCommand
     data class ConfirmSetName(val selectedPlayer : PlayerType,val name : String) : HomeScreenCommand
     //restart timer commands
@@ -95,7 +95,6 @@ sealed interface HomeScreenEvent {
     //navigation events
     data class NavigateToTimerSelection(val navController: NavController): HomeScreenEvent
     data class NavigateToSettings(val navController: NavController) : HomeScreenEvent
-
     data class ShowInvalidNameSnackBar (val message : String):  HomeScreenEvent
 
 }
@@ -106,8 +105,8 @@ data class TimeScreenState(
     val isClockRunning: Boolean = false,  //whether any of the player's has activated the other clock and whether it's running
     val isGameOver: Boolean = false,
     //we can use a unified countDownTime to show on each players side according to the flatMapLatest
-    val player_One_Name: String = "Player One",
-    val player_Two_Name: String = "Player Two",
+    val player_One_Name: String = "Player1",
+    val player_Two_Name: String = "Player2",
     val countDownTime1: String = "00:00",
     val countDownTime2: String = "00:00",
     val player1State: PlayerState = PlayerState.INACTIVE,
@@ -120,7 +119,8 @@ data class TimeScreenState(
     val microTime2: Int = 99,
     //UI booleans
     val showNameDialog : Boolean = false,
-    val showRestartDialog : Boolean = false
+    val showRestartDialog : Boolean = false,
+    val selectedPlayerForNameDialog :  PlayerType = PlayerType.ONE
 )
 
 data class ColorScheme(

@@ -27,7 +27,6 @@ fun editPlayerNameDialog(
     onCommand: (HomeScreenCommand) -> Unit,
     state: TimeScreenState,
     playerType: PlayerType,
-
     ) {
 
     val context = LocalContext.current
@@ -104,10 +103,8 @@ fun editPlayerNameDialog(
 @Composable
 fun restartClockDialog(
     onCommand: (HomeScreenCommand) -> Unit,
-    state: TimeScreenState,
-) {
 
-    val context = LocalContext.current
+) {
 
     AlertDialog(
         modifier = Modifier
