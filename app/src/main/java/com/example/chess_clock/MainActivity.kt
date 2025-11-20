@@ -32,7 +32,6 @@ class MainActivity : ComponentActivity() {
             Chess_clockTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding))
-                  //  TimerScreen(Modifier.padding(innerPadding))
                 }
             }
         }
@@ -52,7 +51,7 @@ fun MainScreen(modifier: Modifier ) {
                 TimerScreen(modifier = modifier,navController = navController)
             }
             composable(routes.screenB){
-                TimerSelection(navController = navController)
+                TimerSelection(modifier = modifier,navController = navController)
             }
             composable(routes.screenC){
                 SettingsScreen(navController = navController)

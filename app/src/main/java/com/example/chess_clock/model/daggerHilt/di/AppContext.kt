@@ -12,7 +12,6 @@ class AppContext : Application() {
 
     companion object{
         private lateinit var instance : AppContext
-
         fun getContext() : Context = instance.applicationContext
     }
 
