@@ -17,13 +17,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.chess_clock.AppUtils.TimerScreenCommand
+import com.example.chess_clock.AppUtils.HomeScreenCommand
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
 
 @Composable
 fun editPlayerNameDialog(
-    onCommand: (TimerScreenCommand) -> Unit,
+    onCommand: (HomeScreenCommand) -> Unit,
     state: TimeScreenState,
     playerType: PlayerType,
     ) {
@@ -75,7 +75,7 @@ fun editPlayerNameDialog(
             Button(
                 onClick = {
                     onCommand(
-                        TimerScreenCommand.ConfirmSetName(
+                        HomeScreenCommand.ConfirmSetName(
                             selectedPlayer = playerType,
                             name = playerName
                         )
@@ -89,7 +89,7 @@ fun editPlayerNameDialog(
             Button(
                 onClick = {
                     onCommand (
-                        TimerScreenCommand.HideNameDialog
+                        HomeScreenCommand.HideNameDialog
                     )
                 }
             ){
@@ -101,7 +101,7 @@ fun editPlayerNameDialog(
 
 @Composable
 fun restartClockDialog(
-    onCommand: (TimerScreenCommand) -> Unit,
+    onCommand: (HomeScreenCommand) -> Unit,
 
     ) {
 
@@ -124,7 +124,7 @@ fun restartClockDialog(
             Button(
                 onClick = {
                     onCommand (
-                        TimerScreenCommand.ConfirmRestartClock
+                        HomeScreenCommand.ConfirmRestartClock
                     )
                 }
             ){
@@ -135,7 +135,7 @@ fun restartClockDialog(
             Button(
                 onClick = {
                     onCommand (
-                        TimerScreenCommand.HideRestartTimerDialog
+                        HomeScreenCommand.HideRestartHomeDialog
                     )
                 }
             ){

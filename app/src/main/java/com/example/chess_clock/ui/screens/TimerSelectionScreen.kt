@@ -1,10 +1,12 @@
-package com.example.chess_clock.ui
+package com.example.chess_clock.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -12,19 +14,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ModeEdit
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.*
+import com.example.chess_clock.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.chess_clock.ViewModel.clockViewModel
+import com.example.chess_clock.ViewModel.HomeScreenViewModel
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.ui.theme.ActiveColorScheme
 import com.example.chess_clock.ui.theme.InactiveColorScheme
@@ -34,31 +36,37 @@ import com.example.chess_clock.ui.theme.InactiveColorScheme
 fun TimerSelection(
     modifier: Modifier,
     navController: NavController,
-    viewModel: clockViewModel = hiltViewModel()
+    viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     //begimnning of the UI
     Column(
         modifier = modifier
     ) {
 
-
+        Image(
+            painter = painterResource(
+                R.drawable.chess_landscape_image,
+            ),
+            contentDescription = "top landscapeimage",
+            modifier = Modifier
+                .weight(0.15F)
+                .fillMaxWidth()
+        )
         LazyColumn (
-            modifier = Modifier.weight(0.9F)
+
+            modifier = Modifier.weight(0.75F)
         ){
+            items(
 
+            ){
+
+            }
         }
-
         Row(
             modifier = Modifier.weight(0.1F),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-
-//            ExtendedFloatingActionButton(
-//                onClick = { /* do something */ },
-//                text = { Text(text = "Extended FAB") },
-//                icon = { Icon(Icons. Filled. Add, "Localized description") },
-//            )
 
             FloatingActionButton(
                 onClick = {
@@ -72,6 +80,7 @@ fun TimerSelection(
                     text = "Start",
                     fontStyle = FontStyle.Italic,
                     fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
                 )
             }
 
@@ -100,6 +109,7 @@ fun TimerSelection(
             FloatingActionButton(
 
                 onClick = {
+
                 },
                 modifier =  Modifier.weight(0.10f)
                     .size(60.dp),

@@ -7,39 +7,39 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import com.example.chess_clock.ui.theme.InactiveColorScheme
 
-sealed interface TimerScreenCommand {
+sealed interface HomeScreenCommand {
     //i think it would be logical to pass a different playerstate or something and not a countDown since it is somethings that is really used in the app including having to remember it and showing it in the UI
     data class PlayerClicked(
         val activatePlayer: ActivatePlayer,
         val playerState: PlayerState,
         val context: Context,
         val view: View
-    ) : TimerScreenCommand
+    ) : HomeScreenCommand
     //navigation commands
-    data class OpenSettings(val navController: NavController): TimerScreenCommand
-    data class OpenTimerSelection(val navController: NavController) : TimerScreenCommand // a data class since we will pass data and show the currently selected format
-    object PauseClockClicked : TimerScreenCommand
+    data class OpenSettings(val navController: NavController): HomeScreenCommand
+    data class OpenHomeSelection(val navController: NavController) : HomeScreenCommand // a data class since we will pass data and show the currently selected format
+    object PauseClockClicked : HomeScreenCommand
     //setname commands
-    data class SetNameClicked(val selectedPlayer : PlayerType) : TimerScreenCommand
-    object HideNameDialog : TimerScreenCommand
-    data class ConfirmSetName(val selectedPlayer : PlayerType,val name : String) : TimerScreenCommand
+    data class SetNameClicked(val selectedPlayer : PlayerType) : HomeScreenCommand
+    object HideNameDialog : HomeScreenCommand
+    data class ConfirmSetName(val selectedPlayer : PlayerType,val name : String) : HomeScreenCommand
     //restart timer commands
-    object RestartTimerClicked : TimerScreenCommand
-    object ConfirmRestartClock : TimerScreenCommand
-    object HideRestartTimerDialog : TimerScreenCommand
+    object RestartHomeClicked : HomeScreenCommand
+    object ConfirmRestartClock : HomeScreenCommand
+    object HideRestartHomeDialog : HomeScreenCommand
 
 }
 
 //a handy way to handle commands on the HomeScreen e.g click of a button
 //from UI to viewModel
-sealed interface TimerScreenEvent {
+sealed interface HomeScreenEvent {
 
-    data class ShowTimeExpiredSnackBar(val message: String) : TimerScreenEvent
-    data class SetName(val playerName: String) : TimerScreenEvent //sets the name
+    data class ShowTimeExpiredSnackBar(val message: String) : HomeScreenEvent
+    data class SetName(val playerName: String) : HomeScreenEvent //sets the name
     //navigation events
-    data class NavigateToTimerSelection(val navController: NavController): TimerScreenEvent
-    data class NavigateToSettings(val navController: NavController) : TimerScreenEvent
-    data class ShowInvalidNameSnackBar (val message : String):  TimerScreenEvent
+    data class NavigateToHomeSelection(val navController: NavController): HomeScreenEvent
+    data class NavigateToSettings(val navController: NavController) : HomeScreenEvent
+    data class ShowInvalidNameSnackBar (val message : String):  HomeScreenEvent
 
 }
 
@@ -95,6 +95,8 @@ object routes {
     var screenA = "Timer_Screen"
     var screenB = "Timer_Selection"
     var screenC = "Settings_Screen"
+    var screenD = "EditTimerScreen"
+    var screenE = "AddTimerScreen"
 }
 
 enum class PlayerState {

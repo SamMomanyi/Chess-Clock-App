@@ -1,4 +1,4 @@
-package com.example.chess_clock.ui
+package com.example.chess_clock.ui.screens
 
 import android.util.Log
 import android.widget.Toast
@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,22 +46,25 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.chess_clock.AppUtils.ActivatePlayer
-import com.example.chess_clock.AppUtils.TimerScreenCommand
-import com.example.chess_clock.AppUtils.TimerScreenEvent
+import com.example.chess_clock.AppUtils.HomeScreenCommand
+import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerState
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
 import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.AppUtils.toplayerState
-import com.example.chess_clock.ViewModel.clockViewModel
+import com.example.chess_clock.ViewModel.HomeScreenViewModel
 import com.example.chess_clock.model.daggerHilt.di.AppContext
+import com.example.chess_clock.ui.ObserverAsEvents
+import com.example.chess_clock.ui.editPlayerNameDialog
+import com.example.chess_clock.ui.restartClockDialog
 
 
 @Composable
-fun TimerScreen(
+fun HomeScreen(
     modifier: Modifier,
     navController: NavController,
-    viewModel: clockViewModel = hiltViewModel()
+    viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
 
     //CurrentPage logic
@@ -76,25 +78,25 @@ fun TimerScreen(
         event
     ) { event ->
         when (event) {
-            is TimerScreenEvent.SetName -> {
+            is HomeScreenEvent.SetName -> {
                 Unit
             }
 
-            is TimerScreenEvent.ShowTimeExpiredSnackBar -> {
+            is HomeScreenEvent.ShowTimeExpiredSnackBar -> {
                 // snackBarState.showSnackbar(message = event.message,duration = SnackbarDuration.Short,actionLabel = "Next")
                 Toast.makeText(AppContext.getContext(), event.message, Toast.LENGTH_SHORT).show()
             }
 
-            is TimerScreenEvent.NavigateToTimerSelection -> {
+            is HomeScreenEvent.NavigateToHomeSelection -> {
                 event.navController.navigate(routes.screenB)
             }
 
-            is TimerScreenEvent.ShowInvalidNameSnackBar -> {
+            is HomeScreenEvent.ShowInvalidNameSnackBar -> {
                 Toast.makeText(AppContext.getContext(), event.message, Toast.LENGTH_SHORT).show()
                 //    snackBarState.showSnackbar(message = event.message,duration = SnackbarDuration.Short, actionLabel = "Invalid")
             }
 
-            is TimerScreenEvent.NavigateToSettings -> {
+            is HomeScreenEvent.NavigateToSettings -> {
                 event.navController.navigate(routes.screenC)
             }
         }
@@ -103,7 +105,7 @@ fun TimerScreen(
     //this alltogether avoids calling the Alerts more than once at a time
     if (state.value.showNameDialog) {
         editPlayerNameDialog(
-            onCommand = viewModel::CommandHandler,
+            onCommand = viewModel::HomeScreenCommandHandler,
             state = state.value,
             playerType = state.value.selectedPlayerForNameDialog,
         )
@@ -111,7 +113,7 @@ fun TimerScreen(
 
     if (state.value.showRestartDialog) {
         restartClockDialog(
-            onCommand = viewModel::CommandHandler,
+            onCommand = viewModel::HomeScreenCommandHandler,
         )
     }
 
@@ -124,7 +126,7 @@ fun TimerScreen(
             playerType = PlayerType.ONE,
             activePlayer = ActivatePlayer.TWO,
             state = state.value,
-            onCommand = viewModel::CommandHandler,
+            onCommand = viewModel::HomeScreenCommandHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.45F)
@@ -134,7 +136,7 @@ fun TimerScreen(
         Navigation(
             navController = navController,
             modifier = Modifier.weight(0.10f),
-            onCommand = viewModel::CommandHandler,
+            onCommand = viewModel::HomeScreenCommandHandler,
             state = state.value
         )
         //player two activates player 1
@@ -142,7 +144,7 @@ fun TimerScreen(
             playerType = PlayerType.TWO,
             activePlayer = ActivatePlayer.ONE,
             state = state.value,
-            onCommand = viewModel::CommandHandler,
+            onCommand = viewModel::HomeScreenCommandHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.45F)
@@ -155,7 +157,7 @@ fun player(
     playerType: PlayerType,
     activePlayer: ActivatePlayer,
     state: TimeScreenState,
-    onCommand: (TimerScreenCommand) -> Unit,
+    onCommand: (HomeScreenCommand) -> Unit,
     modifier: Modifier
 ) {
 
@@ -171,7 +173,7 @@ fun player(
         onClick = {
             Log.e("PlayerCLicked", "I was clicked 1")
             onCommand(
-                TimerScreenCommand.PlayerClicked(
+                HomeScreenCommand.PlayerClicked(
                     activatePlayer = activePlayer,
                     playerState = playerState,
                     context = context,
@@ -185,9 +187,6 @@ fun player(
         border = BorderStroke(10.dp, Color.White),
         shape = CardDefaults.elevatedShape
     ) {
-        //if button is enabled we use the Card's button
-        // else if inactive we cannot click
-        //if clicked when one is defeated we call the restart object
         playerContent(
             playerType = playerType,
             playerState = playerState,
@@ -204,7 +203,7 @@ fun playerContent(
     playerState: PlayerState,
     state: TimeScreenState,
     cardEnabled: Boolean,
-    onCommand: (TimerScreenCommand) -> Unit,
+    onCommand: (HomeScreenCommand) -> Unit,
 
     ) {
 
@@ -240,7 +239,7 @@ fun playerContent(
             .then(
                 if (!cardEnabled && state.activePlayer == ActivatePlayer.NONE)
                     Modifier.clickable {
-                        onCommand(TimerScreenCommand.RestartTimerClicked)
+                        onCommand(HomeScreenCommand.RestartHomeClicked)
                     }
                 else Modifier
             ),
@@ -274,7 +273,7 @@ fun playerContent(
                 Button(
                     onClick = {
                         onCommand(
-                            TimerScreenCommand.SetNameClicked(
+                            HomeScreenCommand.SetNameClicked(
                                 selectedPlayer = playerType
                             )
                         )
@@ -368,7 +367,7 @@ fun Navigation(
     modifier: Modifier,
     state: TimeScreenState,
     navController: NavController,
-    onCommand: (TimerScreenCommand) -> Unit
+    onCommand: (HomeScreenCommand) -> Unit
 ) {
     Row(
         modifier = modifier,
@@ -377,7 +376,7 @@ fun Navigation(
     ) {
         IconButton(
             onClick = {
-                onCommand(TimerScreenCommand.OpenTimerSelection(navController = navController))
+                onCommand(HomeScreenCommand.OpenHomeSelection(navController = navController))
                 Log.e("Navigation", "navigate to timerselection")
                 //  navController.navigate(routes.screenB)
             },
@@ -397,7 +396,7 @@ fun Navigation(
         if(state.activePlayer == ActivatePlayer.NONE){
             IconButton(
                 onClick = {
-                    onCommand(TimerScreenCommand.OpenSettings(navController = navController))
+                    onCommand(HomeScreenCommand.OpenSettings(navController = navController))
                 },
                 modifier = Modifier
                     .weight(0.3333333f)
@@ -415,7 +414,7 @@ fun Navigation(
         else {
             IconButton(
                 onClick = {
-                    onCommand(TimerScreenCommand.PauseClockClicked)
+                    onCommand(HomeScreenCommand.PauseClockClicked)
                 },
                 modifier = Modifier
                     .weight(0.3333333f)
@@ -434,7 +433,7 @@ fun Navigation(
 
         IconButton(
             onClick = {
-                onCommand(TimerScreenCommand.RestartTimerClicked)
+                onCommand(HomeScreenCommand.RestartHomeClicked)
             },
             modifier = Modifier
                 .weight(0.333333f)

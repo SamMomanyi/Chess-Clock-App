@@ -10,16 +10,17 @@ import com.example.chess_clock.AppUtils.ActivatePlayer
 import com.example.chess_clock.AppUtils.AppUtil
 import com.example.chess_clock.AppUtils.ColorScheme
 import com.example.chess_clock.ui.theme.toColorScheme
-import com.example.chess_clock.AppUtils.TimerScreenCommand
-import com.example.chess_clock.AppUtils.TimerScreenEvent
+import com.example.chess_clock.AppUtils.HomeScreenCommand
+import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerData
 import com.example.chess_clock.AppUtils.PlayerState
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
+import com.example.chess_clock.AppUtils.TimerSelectionCommands
 import com.example.chess_clock.R
+import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.daggerHilt.di.AppContext
 import com.example.chess_clock.model.database.clocks.ClockFormat
-import com.example.chess_clock.model.database.clocks.ClocksDatabase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,8 +36,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class clockViewModel @Inject constructor(
-    private val database: ClocksDatabase,
+class HomeScreenViewModel @Inject constructor(
+    private val database: MyRepositoryImplementation,
 ) : ViewModel() {
 
     val soundPool = SoundPool.Builder()
@@ -46,7 +47,7 @@ class clockViewModel @Inject constructor(
     private var clickSoundId: Int = 0
 
     init {
-        clickSoundId = soundPool.load(AppContext.getContext(), R.raw.playertap, 1)
+        clickSoundId = soundPool.load(AppContext.getContext(),R.raw.playertap, 1)
     }
 
     //call one suspend function with the active player, only switch state in the UI
@@ -87,7 +88,7 @@ class clockViewModel @Inject constructor(
     private val _activePlayer = MutableStateFlow<ActivatePlayer>(ActivatePlayer.NONE)
 
     //event variables to send events to UI
-    private val eventChannel = Channel<TimerScreenEvent>()
+    private val eventChannel = Channel<HomeScreenEvent>()
     val events = eventChannel.receiveAsFlow()
 
 
@@ -221,10 +222,10 @@ class clockViewModel @Inject constructor(
     //decremented in the UI
 
 
-    fun CommandHandler(Command: TimerScreenCommand) {
+    fun HomeScreenCommandHandler(Command: HomeScreenCommand) {
         when (Command) {
             //we could always only listen for any state change from the UI then use it to alternate the jobs
-            is TimerScreenCommand.PlayerClicked -> {
+            is HomeScreenCommand.PlayerClicked -> {
                 Log.e("PlayerCLicked", "I was clicked 2 ")
                 when (Command.playerState) {
                     PlayerState.ACTIVE -> {
@@ -253,15 +254,15 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            is TimerScreenCommand.OpenSettings -> {
-                eventChannel.trySend(TimerScreenEvent.NavigateToSettings(navController = Command.navController))
+            is HomeScreenCommand.OpenSettings -> {
+                eventChannel.trySend(HomeScreenEvent.NavigateToSettings(navController = Command.navController))
             }
 
-            is TimerScreenCommand.OpenTimerSelection -> {
-                eventChannel.trySend(TimerScreenEvent.NavigateToTimerSelection(navController = Command.navController))
+            is HomeScreenCommand.OpenHomeSelection -> {
+                eventChannel.trySend(HomeScreenEvent.NavigateToHomeSelection(navController = Command.navController))
             }
 
-            TimerScreenCommand.RestartTimerClicked -> {
+            HomeScreenCommand.RestartHomeClicked -> {
                 _uiState.update {
                     it.copy(
                         showRestartDialog = true
@@ -269,7 +270,7 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            TimerScreenCommand.ConfirmRestartClock -> {
+            HomeScreenCommand.ConfirmRestartClock -> {
                 _uiState.update {
                     it.copy(
                         showRestartDialog = false
@@ -278,7 +279,7 @@ class clockViewModel @Inject constructor(
                 restartTimers()
             }
 
-            TimerScreenCommand.HideRestartTimerDialog -> {
+            HomeScreenCommand.HideRestartHomeDialog -> {
                 _uiState.update {
                     it.copy(
                         showRestartDialog = false
@@ -286,7 +287,7 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            is TimerScreenCommand.SetNameClicked -> {
+            is HomeScreenCommand.SetNameClicked -> {
                 //check which player has clicked to show the name dialog
                 if (Command.selectedPlayer == PlayerType.ONE) {
                     _uiState.update {
@@ -309,7 +310,7 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            is TimerScreenCommand.ConfirmSetName -> {
+            is HomeScreenCommand.ConfirmSetName -> {
                 //choose which player to equate the name to
                 if (Command.selectedPlayer == PlayerType.ONE) {
                     _player1Name.value = Command.name
@@ -318,7 +319,7 @@ class clockViewModel @Inject constructor(
                     _player2Name.value = Command.name
                 }
                 if (Command.name.isBlank()) {
-                    eventChannel.trySend(TimerScreenEvent.ShowInvalidNameSnackBar("😭Name Cannot be Empty"))
+                    eventChannel.trySend(HomeScreenEvent.ShowInvalidNameSnackBar("😭Name Cannot be Empty"))
                     return
                 } else if (Command.selectedPlayer == PlayerType.ONE) {
                     _player1Name.value = Command.name
@@ -332,7 +333,7 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            TimerScreenCommand.HideNameDialog -> {
+            HomeScreenCommand.HideNameDialog -> {
                 _uiState.update {
                     it.copy(
                         showNameDialog = false
@@ -340,12 +341,14 @@ class clockViewModel @Inject constructor(
                 }
             }
 
-            TimerScreenCommand.PauseClockClicked -> {
+            HomeScreenCommand.PauseClockClicked -> {
                 pauseClocks()
             }
 
         }
     }
+
+
 
     //helper functions for the startPlayer one and Two
     private suspend fun stopWatch(
@@ -374,7 +377,7 @@ class clockViewModel @Inject constructor(
                 } else {
                     "🤣😭${_player2Name.value} got flagged"
                 }
-                eventChannel.trySend(TimerScreenEvent.ShowTimeExpiredSnackBar(expiredMessage))
+                eventChannel.trySend(HomeScreenEvent.ShowTimeExpiredSnackBar(expiredMessage))
                 break
             }
         }
@@ -431,8 +434,6 @@ class clockViewModel @Inject constructor(
         super.onCleared()
         soundPool.release()
     }
-
-
 
 }
 

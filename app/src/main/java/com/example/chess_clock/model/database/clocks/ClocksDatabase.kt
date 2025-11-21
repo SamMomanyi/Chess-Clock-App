@@ -9,5 +9,6 @@ import androidx.room.RoomDatabase
     exportSchema = false
 )
 abstract class ClocksDatabase: RoomDatabase() {
+
     abstract val dao : ClocksDao
 }
