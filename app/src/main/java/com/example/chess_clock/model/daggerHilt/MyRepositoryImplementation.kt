@@ -14,6 +14,7 @@ class MyRepositoryImplementation @Inject constructor(
 
     override suspend fun updateTimeFormat(format: ClockFormat) = dao.updateTimeFormat(format)
     override suspend fun deleteTimeFormat(format: ClockFormat) = dao.deleteTimeFormat(format)
+    override suspend fun insertAll(format: List<ClockFormat>)  = dao.insertAll(format)
 
 
     override fun getAllClockFormats() = dao.getAllClockFormats()

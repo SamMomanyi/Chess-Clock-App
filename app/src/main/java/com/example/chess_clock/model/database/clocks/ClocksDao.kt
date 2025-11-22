@@ -2,6 +2,7 @@ package com.example.chess_clock.model.database.clocks
 
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,8 @@ interface ClocksDao {
     @Delete
     suspend fun deleteTimeFormat(format : ClockFormat)
 
+    @Upsert
+    suspend  fun insertAll(format: List<ClockFormat>)
 
     @Query("SELECT * FROM ClocksTable")
     fun getAllClockFormats() :  Flow<List<ClockFormat>>
@@ -24,6 +27,8 @@ interface ClocksDao {
 
     @Query("SELECT * FROM ClocksTable WHERE delay IS NOT NULL")
     fun getAllClockFormatsWithDelays(): Flow<List<ClockFormat>>
+
+
 
 
 }

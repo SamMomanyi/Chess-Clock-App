@@ -1,13 +1,22 @@
 package com.example.chess_clock.ViewModel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.chess_clock.AppUtils.TimeScreenState
 import com.example.chess_clock.AppUtils.TimerSelectionCommands
 import com.example.chess_clock.AppUtils.TimerSelectionState
 import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.model.database.clocks.DatabaseResponse
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class TimerSelectionViewModel @Inject constructor(
@@ -15,9 +24,21 @@ class TimerSelectionViewModel @Inject constructor(
 ) : ViewModel() {
 
 
+
     private val databaseResponse = MutableStateFlow<DatabaseResponse<List<ClockFormat>>>(
         value = DatabaseResponse.isLoading
     )
+    val dbResponse : StateFlow<DatabaseResponse<List<ClockFormat>>> = databaseResponse
+
+    //know we have to listen to UI data and equate something to database response
+    init{
+        viewModelScope.launch {
+            database.getAllClockFormats()
+                .onStart { databaseResponse.value = DatabaseResponse.isLoading }
+                .catch { ex -> databaseResponse.value = DatabaseResponse.Failed(ex.message) }
+                .collect{data -> databaseResponse.value = DatabaseResponse.Success(data)}
+        }
+    }
     private val _uistate = MutableStateFlow<TimerSelectionState>(TimerSelectionState())
     private val selectedClockFormat = MutableStateFlow<ClockFormat>(
         ClockFormat(
@@ -29,14 +50,14 @@ class TimerSelectionViewModel @Inject constructor(
         )
     )
 
-    private val state = combine(
+    val state = combine(
         databaseResponse,_uistate,selectedClockFormat
     ){ db,current,selected ->
         when(db) {
             is DatabaseResponse.Failed -> {
                 current.copy(
                     isLoading = false,
-                    error = db.ex?.message ?: "Failed to load clocks"
+                    error = db.message ?: "Failed to load clocks"
                 )
             }
             is DatabaseResponse.Success<List<ClockFormat>> -> {
@@ -54,7 +75,8 @@ class TimerSelectionViewModel @Inject constructor(
                 )
             }
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), TimerSelectionState())
+
 
     fun TimerSelectionCommandHandler(Command: TimerSelectionCommands) {
         when (Command) {
