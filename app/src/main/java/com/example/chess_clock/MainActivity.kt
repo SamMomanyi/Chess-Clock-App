@@ -50,7 +50,7 @@ fun MainScreen(modifier: Modifier ) {
                 HomeScreen(modifier = modifier,navController = navController)
             }
             composable(routes.screenB){
-                TimerSelection(modifier = modifier,navController = navController)
+                TimerSelection(modifier = modifier,navController = navController,)
             }
             composable(routes.screenC){
                 SettingsScreen(navController = navController)

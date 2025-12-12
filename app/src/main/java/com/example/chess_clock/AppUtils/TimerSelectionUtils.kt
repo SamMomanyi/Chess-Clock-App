@@ -6,6 +6,7 @@ import com.example.chess_clock.model.database.clocks.ClockFormat
 sealed interface TimerSelectionCommands{
 
     object StartButtonClicked : TimerSelectionCommands
+    //whenever a card is clicked we then send the data and update the selectedTimeFormat to use
     data class  CardClicked (val clock : ClockFormat): TimerSelectionCommands
     object EditTimerClicked : TimerSelectionCommands
     object AddTimeClicked : TimerSelectionCommands

@@ -28,25 +28,15 @@ abstract class ClocksDatabase: RoomDatabase() {
                     Room.databaseBuilder(
                         context.applicationContext,
                         ClocksDatabase::class.java,
-                        "ClocksTable"
+                        "chess_clock_Database"
                     )
-                        .addCallback(seedClockFormats())
+                        // THIS IS THE NEW LINE:
+                        .createFromAsset("clocks.db")
+                        // You can remove .addCallback(seedClockFormats())
                         .build()
 
                 INSTANCE = instance
                 instance
-            }
-        }
-
-        private fun seedClockFormats():Callback {
-            return object : Callback(){
-                override fun onCreate(db : SupportSQLiteDatabase){
-
-                    //Insert predefined values on a background thread
-                    CoroutineScope(Dispatchers.IO).launch {
-                        INSTANCE?.dao?.insertAll(AppUtil.predefinedClockFormats)
-                    }
-                }
             }
         }
     }

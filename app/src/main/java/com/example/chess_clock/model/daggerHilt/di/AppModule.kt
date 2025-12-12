@@ -22,8 +22,10 @@ object AppModule {
        return Room.databaseBuilder(
            context,
            klass = ClocksDatabase::class.java,
-           name = "time_formats"
-       ).build()
+           name = "chess_clock_database"
+       )
+           .createFromAsset("clocks.db")
+           .build()
     }
 
     @Provides
