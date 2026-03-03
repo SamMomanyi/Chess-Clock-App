@@ -95,8 +95,10 @@ object routes {
     var screenA = "Timer_Screen"
     var screenB = "Timer_Selection"
     var screenC = "Settings_Screen"
-    var screenD = "EditTimerScreen"
+    var screenD = "EditTimerScreen/{clockId}"
     var screenE = "AddTimerScreen"
+
+    fun editTimer(clockId: Int) = "EditTimerScreen/$clockId"
 }
 
 enum class PlayerState {
