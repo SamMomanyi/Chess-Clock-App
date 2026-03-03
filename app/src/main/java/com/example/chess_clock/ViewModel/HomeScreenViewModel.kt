@@ -9,18 +9,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.chess_clock.AppUtils.ActivatePlayer
 import com.example.chess_clock.AppUtils.AppUtil
 import com.example.chess_clock.AppUtils.ColorScheme
-import com.example.chess_clock.ui.theme.toColorScheme
 import com.example.chess_clock.AppUtils.HomeScreenCommand
 import com.example.chess_clock.AppUtils.HomeScreenEvent
 import com.example.chess_clock.AppUtils.PlayerData
 import com.example.chess_clock.AppUtils.PlayerState
 import com.example.chess_clock.AppUtils.PlayerType
 import com.example.chess_clock.AppUtils.TimeScreenState
-import com.example.chess_clock.AppUtils.TimerSelectionCommands
 import com.example.chess_clock.R
+import com.example.chess_clock.model.SelectedClockRepository
 import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.daggerHilt.di.AppContext
 import com.example.chess_clock.model.database.clocks.ClockFormat
+import com.example.chess_clock.ui.theme.toColorScheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,358 +31,253 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val database: MyRepositoryImplementation,
+    // FIX: inject shared repository so the clock selected in TimerSelection
+    //      is automatically applied here without needing to pass data manually.
+    private val selectedClockRepo: SelectedClockRepository,
 ) : ViewModel() {
 
-    val soundPool = SoundPool.Builder()
-        .setMaxStreams(1)
-        .build()
+    // ── Sound ────────────────────────────────────────────────────────────────
 
+    private val soundPool = SoundPool.Builder().setMaxStreams(1).build()
     private var clickSoundId: Int = 0
 
-    init {
-        clickSoundId = soundPool.load(AppContext.getContext(),R.raw.playertap, 1)
-    }
+    // ── Current format ───────────────────────────────────────────────────────
 
-    //call one suspend function with the active player, only switch state in the UI
+    // Tracks the active ClockFormat so we can apply its increment on turn-switch.
+    private var currentFormat: ClockFormat = selectedClockRepo.selectedClock.value
 
-    private val timeFormats: List<ClockFormat> = AppUtil.predefinedClockFormats
-    val timeFormat = timeFormats.get(index = 0)
+    // ── State flows ──────────────────────────────────────────────────────────
 
-    //represents the current state of the UI HomeScreen
-    //seems we will also need two states of countDownTime for player one and two since they are remembered
+    private val isClockInitial = MutableStateFlow(true)
 
-    private val isClockInitial  = MutableStateFlow<Boolean>(true)
+    private val _countDownTime1 = MutableStateFlow(currentFormat.countDown)
+    private val _countDownTime2 = MutableStateFlow(currentFormat.countDown)
+    private val _microTime1     = MutableStateFlow(99)
+    private val _microTime2     = MutableStateFlow(99)
 
-    //player variables
-    private val _countDownTime1 = MutableStateFlow(timeFormat.countDown)
-    private val _countDownTime2 = MutableStateFlow(timeFormat.countDown)
+    private val _playerTimerState1 = MutableStateFlow(PlayerState.INACTIVE)
+    private val _playerTimerState2 = MutableStateFlow(PlayerState.INACTIVE)
 
-    private val _delayTime = MutableStateFlow(timeFormat.delay)
+    private val _player1Name = MutableStateFlow("Player 1")
+    private val _player2Name = MutableStateFlow("Player 2")
 
-    private val _microTime1 = MutableStateFlow<Int>(0)
-    private val _microTime2 = MutableStateFlow<Int>(0)
+    private val _player1Moves = MutableStateFlow(0)
+    private val _player2Moves = MutableStateFlow(0)
 
-    private val _playerTimerState1 = MutableStateFlow<PlayerState>(PlayerState.INACTIVE)
-    private val _playerTimerState2 = MutableStateFlow<PlayerState>(PlayerState.INACTIVE)
-//initial values to be shown in the UI before update since state overrides the current player_one_name value
-    private val _player1Name = MutableStateFlow<String>("player1")
-    private val _player2Name = MutableStateFlow<String>("player2")
+    private val _uiState     = MutableStateFlow(TimeScreenState())
+    private val _colorScheme1 = MutableStateFlow(ColorScheme())
+    private val _colorScheme2 = MutableStateFlow(ColorScheme())
+    private val _activePlayer = MutableStateFlow(ActivatePlayer.NONE)
 
-    private val _player1Moves = MutableStateFlow<Int>(0)
-    private val _player2Moves = MutableStateFlow<Int>(0)
-
-
-    private val _uiState = MutableStateFlow<TimeScreenState>(TimeScreenState())
-    private val _colorScheme1 = MutableStateFlow<ColorScheme>(ColorScheme())
-    private val _colorScheme2 = MutableStateFlow<ColorScheme>(ColorScheme())
-
-    //at the start of the game when no player is active , it could help us check if _activePlayer = NONE , then allow a click
-    //even tho clicks only happen when a player is active.
-    private val _activePlayer = MutableStateFlow<ActivatePlayer>(ActivatePlayer.NONE)
-
-    //event variables to send events to UI
+    // Events channel
     private val eventChannel = Channel<HomeScreenEvent>()
     val events = eventChannel.receiveAsFlow()
 
+    // ── Init ─────────────────────────────────────────────────────────────────
 
-    val player1Flow = combine(
-        _player1Name, _playerTimerState1, _countDownTime1, _player1Moves, _microTime1
-    ) { name, state, countdowntime, moves, microtime ->
-        PlayerData(
-            name = name,
-            state = state,
-            mainTime = countdowntime,
-            microTime = microtime,
-            playerMoves = moves
-        )
+    init {
+        clickSoundId = soundPool.load(AppContext.getContext(), R.raw.playertap, 1)
+
+        // FIX: observe the shared repository. When the user picks a new clock on
+        //      TimerSelection and taps Start, the format updates here automatically
+        //      — but ONLY while the clock hasn't started yet (isClockInitial).
+        viewModelScope.launch {
+            selectedClockRepo.selectedClock.collect { format ->
+                currentFormat = format
+                if (isClockInitial.value) {
+                    _countDownTime1.value = format.countDown
+                    _countDownTime2.value = format.countDown
+                    _microTime1.value = 99
+                    _microTime2.value = 99
+                }
+            }
+        }
     }
-    val player2Flow = combine(
+
+    // ── Combined state ───────────────────────────────────────────────────────
+
+    private val player1Flow = combine(
+        _player1Name, _playerTimerState1, _countDownTime1, _player1Moves, _microTime1
+    ) { name, state, time, moves, micro ->
+        PlayerData(name = name, state = state, mainTime = time, microTime = micro, playerMoves = moves)
+    }
+
+    private val player2Flow = combine(
         _player2Name, _playerTimerState2, _countDownTime2, _player2Moves, _microTime2
-    ) { name, state, countdowntime, moves, microtime ->
-        PlayerData(
-            name = name,
-            state = state,
-            mainTime = countdowntime,
-            microTime = microtime,
-            playerMoves = moves
-        )
+    ) { name, state, time, moves, micro ->
+        PlayerData(name = name, state = state, mainTime = time, microTime = micro, playerMoves = moves)
     }
 
     val state = combine(
-        _uiState,
-        player1Flow,
-        player2Flow,
-        _activePlayer,
-        isClockInitial
-
-    ) { uiState, p1, p2, activePlayer , isClockRunning ->
-
-        val (p1Name, p1State, t1, mt1, pm1) = p1
-        val (p2Name, p2State, t2, mt2, pm2) = p2
-
+        _uiState, player1Flow, player2Flow, _activePlayer, isClockInitial
+    ) { uiState, p1, p2, activePlayer, clockInitial ->
         uiState.copy(
-            colorScheme1 = p1State.toColorScheme(),
-            colorScheme2 = p2State.toColorScheme(),
-            countDownTime1 = AppUtil.formatTime(t1),
-            countDownTime2 = AppUtil.formatTime(t2),
-            player_One_Name = p1Name,
-            player_Two_Name = p2Name,
-            activePlayer = activePlayer,
-            player1State = p1State,
-            player2State = p2State,
-            player1Moves = pm1,
-            player2Moves = pm2,
-            microTime1 = mt1,
-            microTime2 = mt2,
-            isClockInitial = isClockRunning
+            colorScheme1    = p1.state.toColorScheme(),
+            colorScheme2    = p2.state.toColorScheme(),
+            countDownTime1  = AppUtil.formatTime(p1.mainTime),
+            countDownTime2  = AppUtil.formatTime(p2.mainTime),
+            player_One_Name = p1.name,
+            player_Two_Name = p2.name,
+            activePlayer    = activePlayer,
+            player1State    = p1.state,
+            player2State    = p2.state,
+            player1Moves    = p1.playerMoves,
+            player2Moves    = p2.playerMoves,
+            microTime1      = p1.microTime,
+            microTime2      = p2.microTime,
+            isClockInitial  = clockInitial,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), TimeScreenState())
 
+    // ── Jobs ─────────────────────────────────────────────────────────────────
 
-    //jobs to use in suspend countDown Coroutine
     private var playerOneJob: Job? = null
     private var playerTwoJob: Job? = null
 
-    //sound variables
-
+    // ── Player start ─────────────────────────────────────────────────────────
 
     private fun startPlayerOne() {
-
         cancelJobs()
-        Log.e("startPlayerone", "i'm alive 1 ")
+
+        // FIX: Apply increment to player 2 who just finished their turn.
+        //      Only add if the clock was actually running (not the very first tap).
+        if (_activePlayer.value == ActivatePlayer.TWO) {
+            val increment = currentFormat.increment ?: 0L
+            if (increment > 0L) _countDownTime2.value += increment
+        }
+
         if (playerOneJob?.isActive != true) {
-            IncrementMoves(
-                activePlayer = _activePlayer,
-                playerMoves = _player2Moves
-            )
+            incrementMoves(_activePlayer, _player2Moves)
             setActivePlayer(
-                activePlayer = ActivatePlayer.ONE,
-                activePlayerState = _playerTimerState1,
+                activePlayer        = ActivatePlayer.ONE,
+                activePlayerState   = _playerTimerState1,
                 inactivePlayerState = _playerTimerState2,
-                activeColor = _colorScheme1,
-                inactiveColor = _colorScheme2,
             )
-            Log.e("startPlayerone", "i'm alive 2")
-//            _playerTimerState1.value = PlayerState.ACTIVE
-//            _colorScheme1.value = _playerTimerState1.value.toColorScheme()
-            try {
-                playerOneJob = viewModelScope.launch(Dispatchers.Default) {
-                    stopWatch(_countDownTime1, _microTime1, _playerTimerState1)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    AppContext.getContext(),
-                    "Timer 1 is failing to start",
-                    Toast.LENGTH_SHORT
-                ).show()
-                Log.e("Check1", "Timer 1 is failing to start")
+            playerOneJob = viewModelScope.launch(Dispatchers.Default) {
+                stopWatch(_countDownTime1, _microTime1, _playerTimerState1, isPlayerOne = true)
             }
         }
     }
 
     private fun startPlayerTwo() {
         cancelJobs()
-        Log.e("startPlayertwo", "i'm alive 1 ")
+
+        // FIX: Apply increment to player 1 who just finished their turn.
+        if (_activePlayer.value == ActivatePlayer.ONE) {
+            val increment = currentFormat.increment ?: 0L
+            if (increment > 0L) _countDownTime1.value += increment
+        }
+
         if (playerTwoJob?.isActive != true) {
-            Log.e("startPlayertwo", "i'm alive 2 ")
-            IncrementMoves(
-                activePlayer = _activePlayer,
-                playerMoves = _player1Moves
-            )
+            incrementMoves(_activePlayer, _player1Moves)
             setActivePlayer(
-                activePlayer = ActivatePlayer.TWO,
-                activePlayerState = _playerTimerState2,
+                activePlayer        = ActivatePlayer.TWO,
+                activePlayerState   = _playerTimerState2,
                 inactivePlayerState = _playerTimerState1,
-                activeColor = _colorScheme2,
-                inactiveColor = _colorScheme1
             )
-            try {
-                playerTwoJob = viewModelScope.launch(Dispatchers.Default) {
-                    stopWatch(_countDownTime2, _microTime2, _playerTimerState2)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    AppContext.getContext(),
-                    "Timer 2 is failing to start",
-                    Toast.LENGTH_SHORT
-                ).show()
-                Log.e("Check2", "Timer 2 is failing to start")
+            playerTwoJob = viewModelScope.launch(Dispatchers.Default) {
+                stopWatch(_countDownTime2, _microTime2, _playerTimerState2, isPlayerOne = false)
             }
         }
     }
 
-    //for switching which countDown time is being listened to and being
-    //decremented in the UI
+    // ── Command handler ───────────────────────────────────────────────────────
 
+    fun HomeScreenCommandHandler(command: HomeScreenCommand) {
+        when (command) {
 
-    fun HomeScreenCommandHandler(Command: HomeScreenCommand) {
-        when (Command) {
-            //we could always only listen for any state change from the UI then use it to alternate the jobs
             is HomeScreenCommand.PlayerClicked -> {
-                Log.e("PlayerCLicked", "I was clicked 2 ")
-                when (Command.playerState) {
-                    PlayerState.ACTIVE -> {
-                        soundPool.play(clickSoundId, 1f, 1f, 0, 0, 1f)
-                    }
-
-                    PlayerState.INACTIVE -> {
-                        Command.view.playSoundEffect(SoundEffectConstants.NAVIGATION_RIGHT)
-                    }
-
-                    PlayerState.DEFEATED -> {
-                        Unit
-                    }
+                when (command.playerState) {
+                    PlayerState.ACTIVE   -> soundPool.play(clickSoundId, 1f, 1f, 0, 0, 1f)
+                    PlayerState.INACTIVE -> command.view.playSoundEffect(SoundEffectConstants.NAVIGATION_RIGHT)
+                    PlayerState.DEFEATED -> return  // ignore taps when defeated
                 }
-
-                when (Command.activatePlayer) {
-                    ActivatePlayer.ONE -> {
-                        startPlayerOne()
-                    }
-
-                    ActivatePlayer.TWO -> {
-                        startPlayerTwo()
-                    }
-
-                    ActivatePlayer.NONE -> TODO()
+                when (command.activatePlayer) {
+                    ActivatePlayer.ONE  -> startPlayerOne()
+                    ActivatePlayer.TWO  -> startPlayerTwo()
+                    ActivatePlayer.NONE -> Unit
                 }
             }
 
-            is HomeScreenCommand.OpenSettings -> {
-                eventChannel.trySend(HomeScreenEvent.NavigateToSettings(navController = Command.navController))
-            }
+            is HomeScreenCommand.OpenSettings ->
+                eventChannel.trySend(HomeScreenEvent.NavigateToSettings(command.navController))
 
-            is HomeScreenCommand.OpenHomeSelection -> {
-                eventChannel.trySend(HomeScreenEvent.NavigateToHomeSelection(navController = Command.navController))
-            }
+            is HomeScreenCommand.OpenHomeSelection ->
+                eventChannel.trySend(HomeScreenEvent.NavigateToHomeSelection(command.navController))
 
-            HomeScreenCommand.RestartHomeClicked -> {
-                _uiState.update {
-                    it.copy(
-                        showRestartDialog = true
-                    )
-                }
-            }
+            HomeScreenCommand.PauseClockClicked -> pauseClocks()
+
+            HomeScreenCommand.RestartHomeClicked ->
+                _uiState.value = _uiState.value.copy(showRestartDialog = true)
 
             HomeScreenCommand.ConfirmRestartClock -> {
-                _uiState.update {
-                    it.copy(
-                        showRestartDialog = false
-                    )
-                }
+                _uiState.value = _uiState.value.copy(showRestartDialog = false)
                 restartTimers()
             }
 
-            HomeScreenCommand.HideRestartHomeDialog -> {
-                _uiState.update {
-                    it.copy(
-                        showRestartDialog = false
-                    )
-                }
-            }
+            HomeScreenCommand.HideRestartHomeDialog ->
+                _uiState.value = _uiState.value.copy(showRestartDialog = false)
 
             is HomeScreenCommand.SetNameClicked -> {
-                //check which player has clicked to show the name dialog
-                if (Command.selectedPlayer == PlayerType.ONE) {
-                    _uiState.update {
-                        it.copy(
-                            selectedPlayerForNameDialog = PlayerType.ONE
-                        )
-                    }
-                }
-                else {
-                    _uiState.update {
-                        it.copy(
-                            selectedPlayerForNameDialog = PlayerType.TWO
-                        )
-                    }
-                }
-                _uiState.update {
-                    it.copy(
-                        showNameDialog = true
-                    )
-                }
+                _uiState.value = _uiState.value.copy(
+                    selectedPlayerForNameDialog = command.selectedPlayer,
+                    showNameDialog = true
+                )
             }
 
             is HomeScreenCommand.ConfirmSetName -> {
-                //choose which player to equate the name to
-                if (Command.selectedPlayer == PlayerType.ONE) {
-                    _player1Name.value = Command.name
-                }
-                else {
-                    _player2Name.value = Command.name
-                }
-                if (Command.name.isBlank()) {
-                    eventChannel.trySend(HomeScreenEvent.ShowInvalidNameSnackBar("😭Name Cannot be Empty"))
+                val trimmed = command.name.trim()
+                if (trimmed.isBlank()) {
+                    eventChannel.trySend(HomeScreenEvent.ShowInvalidNameSnackBar("😭 Name cannot be empty"))
                     return
-                } else if (Command.selectedPlayer == PlayerType.ONE) {
-                    _player1Name.value = Command.name
-                } else {
-                    _player2Name.value = Command.name
                 }
-                _uiState.update {
-                    it.copy(
-                        showNameDialog = false
-                    )
-                }
+                if (command.selectedPlayer == PlayerType.ONE) _player1Name.value = trimmed
+                else _player2Name.value = trimmed
+                _uiState.value = _uiState.value.copy(showNameDialog = false)
             }
 
-            HomeScreenCommand.HideNameDialog -> {
-                _uiState.update {
-                    it.copy(
-                        showNameDialog = false
-                    )
-                }
-            }
-
-            HomeScreenCommand.PauseClockClicked -> {
-                pauseClocks()
-            }
-
+            HomeScreenCommand.HideNameDialog ->
+                _uiState.value = _uiState.value.copy(showNameDialog = false)
         }
     }
 
+    // ── Countdown logic ───────────────────────────────────────────────────────
 
-
-    //helper functions for the startPlayer one and Two
     private suspend fun stopWatch(
-        countDownTime: MutableStateFlow<Long>, //either countdowntime one or two,
+        countDownTime: MutableStateFlow<Long>,
         microTime: MutableStateFlow<Int>,
-        playerState: MutableStateFlow<PlayerState>
+        playerState: MutableStateFlow<PlayerState>,
+        isPlayerOne: Boolean,
     ) {
-        val delayTicker = 10L
+        val tickMs = 10L
         while (playerState.value == PlayerState.ACTIVE && countDownTime.value > 0) {
-            delay(delayTicker) //delay for one millisecond
+            delay(tickMs)
             microTime.value -= 1
 
             if (microTime.value < 0) {
                 microTime.value = 99
-                countDownTime.value -= 1000L
+                countDownTime.value -= 1_000L
             }
-            //When time runs out
+
             if (countDownTime.value <= 0) {
                 countDownTime.value = 0
                 microTime.value = 0
                 playerState.value = PlayerState.DEFEATED
-                _activePlayer.value = ActivatePlayer.NONE //this is mainly used to activate the UI buttons
-                //show snackbar Using events // it think it works since the viewModel is aware of this
-                val expiredMessage = if (countDownTime == _countDownTime1) {
-                    "🤣😭${_player1Name.value} got flagged"
-                } else {
-                    "🤣😭${_player2Name.value} got flagged"
-                }
-                eventChannel.trySend(HomeScreenEvent.ShowTimeExpiredSnackBar(expiredMessage))
+                _activePlayer.value = ActivatePlayer.NONE
+                val name = if (isPlayerOne) _player1Name.value else _player2Name.value
+                eventChannel.trySend(HomeScreenEvent.ShowTimeExpiredSnackBar("🤣😭 $name got flagged"))
                 break
             }
         }
-
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun cancelJobs() {
         playerOneJob?.cancel()
@@ -393,53 +288,49 @@ class HomeScreenViewModel @Inject constructor(
         activePlayer: ActivatePlayer,
         activePlayerState: MutableStateFlow<PlayerState>,
         inactivePlayerState: MutableStateFlow<PlayerState>,
-        activeColor: MutableStateFlow<ColorScheme>,
-        inactiveColor: MutableStateFlow<ColorScheme>
     ) {
         _activePlayer.value = activePlayer
         isClockInitial.value = false
         activePlayerState.value = PlayerState.ACTIVE
         inactivePlayerState.value = PlayerState.INACTIVE
-        activeColor.value = activePlayerState.value.toColorScheme()
-        inactiveColor.value = inactivePlayerState.value.toColorScheme()
     }
 
-    private fun IncrementMoves(
+    private fun incrementMoves(
         activePlayer: MutableStateFlow<ActivatePlayer>,
-        playerMoves: MutableStateFlow<Int>
+        playerMoves: MutableStateFlow<Int>,
     ) {
-        if (activePlayer.value != ActivatePlayer.NONE) {
-            playerMoves.value += 1
-        }
+        if (activePlayer.value != ActivatePlayer.NONE) playerMoves.value += 1
     }
 
     private fun restartTimers() {
         cancelJobs()
+        val format = currentFormat
         isClockInitial.value = true
-        _playerTimerState2.value = PlayerState.INACTIVE
         _playerTimerState1.value = PlayerState.INACTIVE
+        _playerTimerState2.value = PlayerState.INACTIVE
         _player1Moves.value = 0
         _player2Moves.value = 0
-        _countDownTime1.value = timeFormat.countDown
-        _countDownTime2.value = timeFormat.countDown
-        _microTime1.value = 0
-        _microTime2.value = 0
+        _countDownTime1.value = format.countDown
+        _countDownTime2.value = format.countDown
+        // FIX: was 0, should be 99 so first second counts down cleanly
+        _microTime1.value = 99
+        _microTime2.value = 99
         _activePlayer.value = ActivatePlayer.NONE
     }
-    private fun pauseClocks(){
+
+    // FIX: set the active player's state back to INACTIVE so the card no
+    //      longer looks "active" while the clock is paused. isClockInitial
+    //      stays false so the game is still in-progress; both cards become
+    //      clickable again because ActivatePlayer is NONE.
+    private fun pauseClocks() {
         cancelJobs()
+        if (_playerTimerState1.value == PlayerState.ACTIVE) _playerTimerState1.value = PlayerState.INACTIVE
+        if (_playerTimerState2.value == PlayerState.ACTIVE) _playerTimerState2.value = PlayerState.INACTIVE
         _activePlayer.value = ActivatePlayer.NONE
     }
+
     override fun onCleared() {
         super.onCleared()
         soundPool.release()
     }
-
 }
-
-
-
-
-
-
-
