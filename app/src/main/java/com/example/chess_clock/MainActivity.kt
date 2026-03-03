@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.ui.SettingsScreen
 import com.example.chess_clock.ui.screens.AddTimerScreen
@@ -38,38 +39,40 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(modifier: Modifier ) {
-
+fun MainScreen(modifier: Modifier) {
     val navController = rememberNavController()
 
     NavHost(
-        navController = navController,
+        navController    = navController,
         startDestination = routes.screenA,
-        builder = {
-            composable(routes.screenA){
-                HomeScreen(modifier = modifier,navController = navController)
-            }
-            composable(routes.screenB){
-                TimerSelection(modifier = modifier,navController = navController,)
-            }
-            composable(routes.screenC){
-                SettingsScreen(navController = navController)
-            }
-            composable(routes.screenD){
-                EditTimerScreen()
-            }
-            composable(routes.screenE){
-                AddTimerScreen()
-            }
+    ) {
+        composable(routes.screenA) {
+            HomeScreen(modifier = modifier, navController = navController)
         }
-    )
 
-}
+        composable(routes.screenB) {
+            TimerSelection(modifier = modifier, navController = navController)
+        }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Chess_clockTheme {
+        composable(routes.screenC) {
+            SettingsScreen(navController = navController)
+        }
 
+        // EditTimerScreen receives the clock ID as a nav argument.
+        // routes.screenD is "EditTimerScreen/{clockId}"
+        // Navigate to it using routes.editTimer(id), e.g. "EditTimerScreen/3"
+        composable(
+            route     = routes.screenD,
+            arguments = listOf(
+                navArgument("clockId") { type = NavType.IntType }
+            )
+        ) {
+            EditTimerScreen(navController = navController)
+            // EditTimerViewModel reads clockId from SavedStateHandle automatically
+        }
+
+        composable(routes.screenE) {
+            AddTimerScreen(navController = navController)
+        }
     }
 }
