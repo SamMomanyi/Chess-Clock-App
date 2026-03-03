@@ -29,13 +29,3 @@ object AppUtil {
 
 // ── Navigation routes ────────────────────────────────────────────────────────
 
-object routes {
-    const val screenA = "Timer_Screen"
-    const val screenB = "Timer_Selection"
-    const val screenC = "Settings_Screen"
-    const val screenD = "EditTimerScreen/{clockId}"   // needs clockId arg
-    const val screenE = "AddTimerScreen"
-
-    /** Build a concrete edit route with a real ID */
-    fun editTimer(clockId: Int) = "EditTimerScreen/$clockId"
-}
