@@ -18,6 +18,8 @@ enum class AppTheme(val displayName: String) {
     CLASSIC_WOOD("Classic Wood"),
     ROYAL_GOLD("Royal Gold"),
     EMERALD("Emerald"),
+    NEON_CYBER("Neon Cyber"),
+    SUNSET_BLAZE("Sunset Blaze"),
 }
 
 // ── Per-theme Material color schemes ─────────────────────────────────────────
@@ -74,6 +76,32 @@ private fun emeraldColorScheme() = darkColorScheme(
     secondary        = Emerald.TextSecondary,
 )
 
+private fun neonCyberColorScheme() = darkColorScheme(
+    primary          = NeonCyber.Accent,
+    onPrimary        = NeonCyber.OnAccent,
+    background       = NeonCyber.Background,
+    onBackground     = NeonCyber.TextPrimary,
+    surface          = NeonCyber.Surface,
+    onSurface        = NeonCyber.TextPrimary,
+    surfaceVariant   = NeonCyber.SurfaceHigh,
+    onSurfaceVariant = NeonCyber.TextSecondary,
+    primaryContainer = NeonCyber.Active,
+    secondary        = NeonCyber.TextSecondary,
+)
+
+private fun sunsetBlazeColorScheme() = darkColorScheme(
+    primary          = SunsetBlaze.Accent,
+    onPrimary        = SunsetBlaze.OnAccent,
+    background       = SunsetBlaze.Background,
+    onBackground     = SunsetBlaze.TextPrimary,
+    surface          = SunsetBlaze.Surface,
+    onSurface        = SunsetBlaze.TextPrimary,
+    surfaceVariant   = SunsetBlaze.SurfaceHigh,
+    onSurfaceVariant = SunsetBlaze.TextSecondary,
+    primaryContainer = SunsetBlaze.Active,
+    secondary        = SunsetBlaze.TextSecondary,
+)
+
 // ── Per-theme player color schemes ────────────────────────────────────────────
 // These replace the old hardcoded Active/Inactive/DefeatedColorScheme values.
 // They are read by PlayerState.toColorScheme() which now needs the AppTheme.
@@ -103,6 +131,18 @@ fun activeColorScheme(theme: AppTheme) = when (theme) {
         backGroundColor = Emerald.Active,
         activeIcon      = Icons.Default.Face,
     )
+    AppTheme.NEON_CYBER -> ColorScheme(
+        borderColor     = NeonCyber.Accent,
+        contentColor    = NeonCyber.TextPrimary,
+        backGroundColor = NeonCyber.Active,
+        activeIcon      = Icons.Default.Face,
+    )
+    AppTheme.SUNSET_BLAZE -> ColorScheme(
+        borderColor     = SunsetBlaze.Accent,
+        contentColor    = SunsetBlaze.TextPrimary,
+        backGroundColor = SunsetBlaze.Active,
+        activeIcon      = Icons.Default.Face,
+    )
 }
 
 fun inactiveColorScheme(theme: AppTheme) = when (theme) {
@@ -128,6 +168,18 @@ fun inactiveColorScheme(theme: AppTheme) = when (theme) {
         borderColor     = Emerald.SurfaceHigh,
         contentColor    = Emerald.TextSecondary,
         backGroundColor = Emerald.Inactive,
+        activeIcon      = null,
+    )
+    AppTheme.NEON_CYBER -> ColorScheme(
+        borderColor     = NeonCyber.SurfaceHigh,
+        contentColor    = NeonCyber.TextSecondary,
+        backGroundColor = NeonCyber.Inactive,
+        activeIcon      = null,
+    )
+    AppTheme.SUNSET_BLAZE -> ColorScheme(
+        borderColor     = SunsetBlaze.SurfaceHigh,
+        contentColor    = SunsetBlaze.TextSecondary,
+        backGroundColor = SunsetBlaze.Inactive,
         activeIcon      = null,
     )
 }
@@ -157,6 +209,18 @@ fun defeatedColorScheme(theme: AppTheme) = when (theme) {
         backGroundColor = Emerald.Defeated,
         activeIcon      = null,
     )
+    AppTheme.NEON_CYBER -> ColorScheme(
+        borderColor     = Color.Red,
+        contentColor    = NeonCyber.TextPrimary,
+        backGroundColor = NeonCyber.Defeated,
+        activeIcon      = null,
+    )
+    AppTheme.SUNSET_BLAZE -> ColorScheme(
+        borderColor     = Color.Red,
+        contentColor    = SunsetBlaze.TextPrimary,
+        backGroundColor = SunsetBlaze.Defeated,
+        activeIcon      = null,
+    )
 }
 
 // Returns the accent glow color for the pulsing border animation
@@ -165,6 +229,8 @@ fun accentGlowColor(theme: AppTheme): Color = when (theme) {
     AppTheme.CLASSIC_WOOD   -> ClassicWood.AccentGlow
     AppTheme.ROYAL_GOLD     -> RoyalGold.AccentGlow
     AppTheme.EMERALD        -> Emerald.AccentGlow
+    AppTheme.NEON_CYBER     -> NeonCyber.AccentGlow
+    AppTheme.SUNSET_BLAZE   -> SunsetBlaze.AccentGlow
 }
 
 fun accentColor(theme: AppTheme): Color = when (theme) {
@@ -172,6 +238,8 @@ fun accentColor(theme: AppTheme): Color = when (theme) {
     AppTheme.CLASSIC_WOOD   -> ClassicWood.Accent
     AppTheme.ROYAL_GOLD     -> RoyalGold.Accent
     AppTheme.EMERALD        -> Emerald.Accent
+    AppTheme.NEON_CYBER     -> NeonCyber.Accent
+    AppTheme.SUNSET_BLAZE   -> SunsetBlaze.Accent
 }
 
 // Kept for TimerSelection and other screens that reference these directly
@@ -212,6 +280,8 @@ fun Chess_clockTheme(
         AppTheme.CLASSIC_WOOD   -> classicWoodColorScheme()
         AppTheme.ROYAL_GOLD     -> royalGoldColorScheme()
         AppTheme.EMERALD        -> emeraldColorScheme()
+        AppTheme.NEON_CYBER     -> neonCyberColorScheme()
+        AppTheme.SUNSET_BLAZE   -> sunsetBlazeColorScheme()
     }
 
     MaterialTheme(

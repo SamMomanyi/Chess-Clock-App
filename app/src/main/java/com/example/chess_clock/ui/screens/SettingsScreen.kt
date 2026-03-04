@@ -1,4 +1,4 @@
-package com.example.chess_clock.ui.screens
+package com.example.chess_clock.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +45,8 @@ import com.example.chess_clock.ui.theme.ClassicWood
 import com.example.chess_clock.ui.theme.Emerald
 import com.example.chess_clock.ui.theme.MidnightSteel
 import com.example.chess_clock.ui.theme.RoyalGold
+import com.example.chess_clock.ui.theme.NeonCyber
+import com.example.chess_clock.ui.theme.SunsetBlaze
 
 // Preview swatches shown on each theme card
 private data class ThemePreview(
@@ -83,6 +85,20 @@ private val themePreviews = listOf(
         accent      = Emerald.Accent,
         surface     = Emerald.Surface,
         description = "Classic board green with ivory",
+    ),
+    ThemePreview(
+        theme       = AppTheme.NEON_CYBER,
+        background  = NeonCyber.Background,
+        accent      = NeonCyber.Accent,
+        surface     = NeonCyber.Surface,
+        description = "Dark purple with vivid cyan glow",
+    ),
+    ThemePreview(
+        theme       = AppTheme.SUNSET_BLAZE,
+        background  = SunsetBlaze.Background,
+        accent      = SunsetBlaze.Accent,
+        surface     = SunsetBlaze.Surface,
+        description = "Deep amber with blazing orange",
     ),
 )
 

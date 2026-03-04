@@ -32,6 +32,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -57,25 +58,27 @@ import com.example.chess_clock.AppUtils.TimerSelectionCommands
 import com.example.chess_clock.AppUtils.TimerSelectionEvents
 import com.example.chess_clock.AppUtils.routes
 import com.example.chess_clock.R
+import com.example.chess_clock.ViewModel.ThemeViewModel
 import com.example.chess_clock.ViewModel.TimerSelectionViewModel
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.model.database.clocks.DatabaseResponse
 import com.example.chess_clock.ui.ObserverAsEvents
-
-private val Gold          = Color(0xFFFFD700)
-private val DarkBg        = Color(0xFF1A1A2E)
-private val CardBg        = Color(0xFF16213E)
-private val SelectedCardBg = Color(0xFF0F3460)
+import com.example.chess_clock.ui.theme.accentColor
 
 @Composable
 fun TimerSelection(
     modifier: Modifier,
     navController: NavController,
-    viewModel: TimerSelectionViewModel = hiltViewModel()
+    viewModel: TimerSelectionViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel(),
 ) {
-    val state    by viewModel.state.collectAsStateWithLifecycle()
-    val dbState  by viewModel.dbResponse.collectAsState()
-    val onCommand = viewModel::TimerSelectionCommandHandler
+    val state       by viewModel.state.collectAsStateWithLifecycle()
+    val dbState     by viewModel.dbResponse.collectAsState()
+    val currentTheme by themeViewModel.currentTheme.collectAsStateWithLifecycle()
+    val onCommand   = viewModel::TimerSelectionCommandHandler
+
+    // Derive accent from the live theme
+    val accent = accentColor(currentTheme)
 
     ObserverAsEvents(viewModel.events) { event ->
         when (event) {
@@ -91,7 +94,7 @@ fun TimerSelection(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -105,27 +108,27 @@ fun TimerSelection(
                     painter            = painterResource(R.drawable.chess_landscape_image),
                     contentDescription = "Chess landscape",
                     contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize()
+                    modifier           = Modifier.fillMaxSize(),
                 )
-                // Fade the image into the dark background
+                // Fade into the theme background colour
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, DarkBg),
+                                colors = listOf(Color.Transparent, MaterialTheme.colorScheme.background),
                                 startY = 120f,
                             )
                         )
                 )
                 Text(
                     text       = "Select Time Control",
-                    color      = Color.White,
+                    color      = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 22.sp,
                     modifier   = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 12.dp)
+                        .padding(start = 16.dp, bottom = 12.dp),
                 )
             }
 
@@ -135,7 +138,7 @@ fun TimerSelection(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding      = PaddingValues(
                     start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp
-                )
+                ),
             ) {
                 when (val result = dbState) {
                     is DatabaseResponse.Success -> {
@@ -143,11 +146,11 @@ fun TimerSelection(
                             item {
                                 Column(
                                     modifier            = Modifier.fillMaxWidth().padding(32.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                    horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
-                                    Text("No clocks found", color = Color.White, fontSize = 16.sp)
+                                    Text("No clocks found", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                                     Spacer(Modifier.height(4.dp))
-                                    Text("Tap + to add one", color = Color.Gray, fontSize = 14.sp)
+                                    Text("Tap + to add one", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                 }
                             }
                         } else {
@@ -155,6 +158,7 @@ fun TimerSelection(
                                 SwipeToDeleteTimerCard(
                                     clock         = clock,
                                     isSelected    = state.selectedClock?.id == clock.id,
+                                    accent        = accent,
                                     navController = navController,
                                     onCommand     = { onCommand(it) },
                                 )
@@ -165,8 +169,8 @@ fun TimerSelection(
                         item {
                             Box(
                                 modifier         = Modifier.fillMaxWidth().padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) { CircularProgressIndicator(color = Gold) }
+                                contentAlignment = Alignment.Center,
+                            ) { CircularProgressIndicator(color = accent) }
                         }
                     is DatabaseResponse.Failed ->
                         item { FailedScreen(result.message ?: "Failed to load clocks") }
@@ -177,21 +181,22 @@ fun TimerSelection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF0D0D1A))
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Start — uses theme accent
                 FloatingActionButton(
                     onClick        = { onCommand(TimerSelectionCommands.StartButtonClicked(navController)) },
                     modifier       = Modifier.weight(1f).height(52.dp),
                     shape          = RoundedCornerShape(14.dp),
-                    containerColor = Gold,
-                    contentColor   = Color.Black,
+                    containerColor = accent,
+                    contentColor   = MaterialTheme.colorScheme.onPrimary,
                 ) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                         Text("Start", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -206,8 +211,8 @@ fun TimerSelection(
                     },
                     modifier       = Modifier.size(52.dp),
                     shape          = RoundedCornerShape(14.dp),
-                    containerColor = CardBg,
-                    contentColor   = Color.White,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor   = MaterialTheme.colorScheme.onSurfaceVariant,
                 ) {
                     Icon(Icons.Default.ModeEdit, contentDescription = "Edit", modifier = Modifier.size(22.dp))
                 }
@@ -216,8 +221,8 @@ fun TimerSelection(
                     onClick        = { onCommand(TimerSelectionCommands.AddTimeClicked(navController)) },
                     modifier       = Modifier.size(52.dp),
                     shape          = RoundedCornerShape(14.dp),
-                    containerColor = CardBg,
-                    contentColor   = Gold,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor   = accent,
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(22.dp))
                 }
@@ -233,6 +238,7 @@ fun TimerSelection(
 private fun SwipeToDeleteTimerCard(
     clock: ClockFormat,
     isSelected: Boolean,
+    accent: Color,
     navController: NavController,
     onCommand: (TimerSelectionCommands) -> Unit,
 ) {
@@ -268,6 +274,7 @@ private fun SwipeToDeleteTimerCard(
         TimerCard(
             clock         = clock,
             isSelected    = isSelected,
+            accent        = accent,
             navController = navController,
             onCommand     = onCommand,
         )
@@ -280,6 +287,7 @@ private fun SwipeToDeleteTimerCard(
 fun TimerCard(
     clock: ClockFormat,
     isSelected: Boolean,
+    accent: Color,
     navController: NavController,
     onCommand: (TimerSelectionCommands) -> Unit,
 ) {
@@ -292,10 +300,13 @@ fun TimerCard(
         onClick   = { onCommand(TimerSelectionCommands.CardClicked(clock)) },
         modifier  = Modifier.fillMaxWidth(),
         shape     = RoundedCornerShape(14.dp),
-        border    = if (isSelected) BorderStroke(2.dp, Gold) else null,
+        border    = if (isSelected) BorderStroke(2.dp, accent) else null,
         colors    = CardDefaults.cardColors(
-            containerColor = if (isSelected) SelectedCardBg else CardBg,
-            contentColor   = Color.White,
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant,
+            contentColor   = MaterialTheme.colorScheme.onSurface,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isSelected) 8.dp else 2.dp
@@ -313,7 +324,8 @@ fun TimerCard(
                     text       = clock.name,
                     fontWeight = FontWeight.Light,
                     fontSize   = 12.sp,
-                    color      = if (isSelected) Gold.copy(alpha = 0.85f) else Color.Gray,
+                    color      = if (isSelected) accent.copy(alpha = 0.85f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -323,12 +335,12 @@ fun TimerCard(
                         text       = timeLabel,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 22.sp,
-                        color      = if (isSelected) Gold else Color.White,
+                        color      = if (isSelected) accent else MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text     = incrementLabel,
                         fontSize = 13.sp,
-                        color    = Color.Gray,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -337,10 +349,15 @@ fun TimerCard(
                 if (isSelected) {
                     Box(
                         modifier = Modifier
-                            .background(Gold.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                            .background(accent.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text("Selected", fontSize = 11.sp, color = Gold, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text       = "Selected",
+                            fontSize   = 11.sp,
+                            color      = accent,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                     Spacer(Modifier.width(8.dp))
                 }
@@ -351,7 +368,7 @@ fun TimerCard(
                     Icon(
                         imageVector        = Icons.Default.ModeEdit,
                         contentDescription = "Edit ${clock.name}",
-                        tint               = Color.Gray,
+                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier           = Modifier.size(18.dp),
                     )
                 }
@@ -366,7 +383,7 @@ fun FailedScreen(message: String) {
         onClick        = {},
         icon           = { Icon(Icons.Default.NearbyError, contentDescription = "Error") },
         text           = { Text(message) },
-        containerColor = Color.Cyan,
-        contentColor   = Color.White,
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        contentColor   = MaterialTheme.colorScheme.onErrorContainer,
     )
 }

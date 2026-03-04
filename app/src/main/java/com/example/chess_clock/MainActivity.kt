@@ -19,7 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.chess_clock.AppUtils.routes
-import com.example.chess_clock.ui.screens.SettingsScreen
+import com.example.chess_clock.ui.SettingsScreen
 import com.example.chess_clock.ui.screens.AddTimerScreen
 import com.example.chess_clock.ui.screens.EditTimerScreen
 import com.example.chess_clock.ui.screens.HomeScreen
