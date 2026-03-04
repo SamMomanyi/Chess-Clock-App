@@ -90,7 +90,10 @@ class HomeScreenViewModel @Inject constructor(
         viewModelScope.launch {
             selectedClockRepo.selectedClock.collect { format ->
                 currentFormat = format
-                if (isClockInitial.value) {
+                // Apply the new format whenever no game is actively running.
+                // Previously checked isClockInitial only, which meant a paused
+                // or restarted game would ignore the newly selected format.
+                if (_activePlayer.value == ActivatePlayer.NONE) {
                     _countDownTime1.value = format.countDown
                     _countDownTime2.value = format.countDown
                     _microTime1.value = 99
