@@ -21,6 +21,7 @@ import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.daggerHilt.di.AppContext
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.ui.theme.toColorScheme
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,9 +38,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val database: MyRepositoryImplementation,
-    // FIX: inject shared repository so the clock selected in TimerSelection
-    //      is automatically applied here without needing to pass data manually.
     private val selectedClockRepo: SelectedClockRepository,
+    private val themeRepository: com.example.chess_clock.model.ThemeRepository,
 ) : ViewModel() {
 
     // ── Sound ────────────────────────────────────────────────────────────────
@@ -117,12 +117,16 @@ class HomeScreenViewModel @Inject constructor(
         PlayerData(name = name, state = state, mainTime = time, microTime = micro, playerMoves = moves)
     }
 
+    private val _currentTheme = themeRepository.selectedTheme
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.example.chess_clock.ui.theme.AppTheme.MIDNIGHT_STEEL)
+
     val state = combine(
         _uiState, player1Flow, player2Flow, _activePlayer, isClockInitial
     ) { uiState, p1, p2, activePlayer, clockInitial ->
+        val theme = _currentTheme.value
         uiState.copy(
-            colorScheme1    = p1.state.toColorScheme(),
-            colorScheme2    = p2.state.toColorScheme(),
+            colorScheme1    = p1.state.toColorScheme(theme),
+            colorScheme2    = p2.state.toColorScheme(theme),
             countDownTime1  = AppUtil.formatTime(p1.mainTime),
             countDownTime2  = AppUtil.formatTime(p2.mainTime),
             player_One_Name = p1.name,
