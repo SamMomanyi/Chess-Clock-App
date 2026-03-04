@@ -206,7 +206,10 @@ fun player(
                 )
             } else Modifier
         ),
-        enabled   = (playerState == PlayerState.ACTIVE || state.isClockInitial),
+        // Also enabled when paused (NONE + not initial) so either player can resume
+        enabled   = (playerState == PlayerState.ACTIVE
+                || state.isClockInitial
+                || state.activePlayer == ActivatePlayer.NONE),
         border    = BorderStroke(borderWidth, borderColor),
         shape     = CardDefaults.elevatedShape,
         colors    = CardDefaults.cardColors(
