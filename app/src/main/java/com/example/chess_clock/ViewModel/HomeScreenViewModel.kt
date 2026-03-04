@@ -21,14 +21,13 @@ import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.daggerHilt.di.AppContext
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.ui.theme.toColorScheme
-
+import kotlinx.coroutines.flow.SharingStarted
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -120,10 +119,18 @@ class HomeScreenViewModel @Inject constructor(
     private val _currentTheme = themeRepository.selectedTheme
         .stateIn(viewModelScope, SharingStarted.Eagerly, com.example.chess_clock.ui.theme.AppTheme.MIDNIGHT_STEEL)
 
+    private val _pausedPlayer = MutableStateFlow(ActivatePlayer.NONE)
+
     val state = combine(
-        _uiState, player1Flow, player2Flow, _activePlayer, isClockInitial
-    ) { uiState, p1, p2, activePlayer, clockInitial ->
-        val theme = _currentTheme.value
+        _uiState, player1Flow, player2Flow, _activePlayer, isClockInitial, _pausedPlayer
+    ) { array ->
+        val uiState      = array[0] as TimeScreenState
+        val p1           = array[1] as PlayerData
+        val p2           = array[2] as PlayerData
+        val activePlayer = array[3] as ActivatePlayer
+        val clockInitial = array[4] as Boolean
+        val pausedPlayer = array[5] as ActivatePlayer
+        val theme        = _currentTheme.value
         uiState.copy(
             colorScheme1    = p1.state.toColorScheme(theme),
             colorScheme2    = p2.state.toColorScheme(theme),
@@ -139,6 +146,7 @@ class HomeScreenViewModel @Inject constructor(
             microTime1      = p1.microTime,
             microTime2      = p2.microTime,
             isClockInitial  = clockInitial,
+            pausedPlayer    = pausedPlayer,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), TimeScreenState())
 
@@ -296,6 +304,7 @@ class HomeScreenViewModel @Inject constructor(
         activePlayerState: MutableStateFlow<PlayerState>,
         inactivePlayerState: MutableStateFlow<PlayerState>,
     ) {
+        _pausedPlayer.value = ActivatePlayer.NONE  // ← clear on resume
         _activePlayer.value = activePlayer
         isClockInitial.value = false
         activePlayerState.value = PlayerState.ACTIVE
@@ -313,13 +322,13 @@ class HomeScreenViewModel @Inject constructor(
         cancelJobs()
         val format = currentFormat
         isClockInitial.value = true
+        _pausedPlayer.value = ActivatePlayer.NONE  // ← clear on restart
         _playerTimerState1.value = PlayerState.INACTIVE
         _playerTimerState2.value = PlayerState.INACTIVE
         _player1Moves.value = 0
         _player2Moves.value = 0
         _countDownTime1.value = format.countDown
         _countDownTime2.value = format.countDown
-        // FIX: was 0, should be 99 so first second counts down cleanly
         _microTime1.value = 99
         _microTime2.value = 99
         _activePlayer.value = ActivatePlayer.NONE
@@ -331,6 +340,8 @@ class HomeScreenViewModel @Inject constructor(
     //      clickable again because ActivatePlayer is NONE.
     private fun pauseClocks() {
         cancelJobs()
+        // Remember who was playing so only they can resume
+        _pausedPlayer.value = _activePlayer.value
         if (_playerTimerState1.value == PlayerState.ACTIVE) _playerTimerState1.value = PlayerState.INACTIVE
         if (_playerTimerState2.value == PlayerState.ACTIVE) _playerTimerState2.value = PlayerState.INACTIVE
         _activePlayer.value = ActivatePlayer.NONE

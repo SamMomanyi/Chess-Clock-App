@@ -65,7 +65,8 @@ data class TimeScreenState(
     //UI booleans
     val showNameDialog : Boolean = false,
     val showRestartDialog : Boolean = false,
-    val selectedPlayerForNameDialog :  PlayerType = PlayerType.ONE
+    val selectedPlayerForNameDialog :  PlayerType = PlayerType.ONE,
+    val pausedPlayer: ActivatePlayer = ActivatePlayer.NONE,
 )
 
 data class ColorScheme(

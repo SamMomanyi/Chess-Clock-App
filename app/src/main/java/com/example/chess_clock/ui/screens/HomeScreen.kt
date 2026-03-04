@@ -186,6 +186,12 @@ fun player(
     }
     val borderWidth = if (isActive) 4.dp else 1.dp
 
+    // Which player's card should be enabled after a pause
+    val matchesPausedPlayer = when (playerType) {
+        PlayerType.ONE -> state.pausedPlayer == ActivatePlayer.ONE
+        PlayerType.TWO -> state.pausedPlayer == ActivatePlayer.TWO
+    }
+
     Card(
         onClick = {
             onCommand(
@@ -198,18 +204,17 @@ fun player(
             )
         },
         modifier  = modifier.then(
-            // Extra glow drawn behind the card when active
             if (isActive) Modifier.drawBehind {
                 drawRect(
-                    color       = accentGlow.copy(alpha = glowAlpha * 0.4f),
-                    style       = Stroke(width = 18.dp.toPx()),
+                    color = accentGlow.copy(alpha = glowAlpha * 0.4f),
+                    style = Stroke(width = 18.dp.toPx()),
                 )
             } else Modifier
         ),
-        // Also enabled when paused (NONE + not initial) so either player can resume
-        enabled   = (playerState == PlayerState.ACTIVE
+        enabled = playerState == PlayerState.ACTIVE
                 || state.isClockInitial
-                || state.activePlayer == ActivatePlayer.NONE),
+                || (state.activePlayer == ActivatePlayer.NONE && state.pausedPlayer == ActivatePlayer.NONE)
+                || matchesPausedPlayer,
         border    = BorderStroke(borderWidth, borderColor),
         shape     = CardDefaults.elevatedShape,
         colors    = CardDefaults.cardColors(
