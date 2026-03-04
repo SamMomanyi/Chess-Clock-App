@@ -61,3 +61,32 @@ object Emerald {
     val Defeated     = Color(0xFF4A0E0E)
     val Inactive     = Color(0xFF112218)
 }
+// ── Neon Cyber ────────────────────────────────────────────────────────────────
+object NeonCyber {
+    val Background    = Color(0xFF0D0D0D)
+    val Surface       = Color(0xFF1A0A2E)
+    val SurfaceHigh   = Color(0xFF2D1B4E)
+    val Accent        = Color(0xFF00FFF5)   // bright cyan
+    val AccentGlow    = Color(0x8000FFF5)
+    val OnAccent      = Color(0xFF000000)
+    val TextPrimary   = Color(0xFFE0FFFF)
+    val TextSecondary = Color(0xFF7B9EA0)
+    val Active        = Color(0xFF003D3B)
+    val Defeated      = Color(0xFF5A0020)
+    val Inactive      = Color(0xFF1A0A2E)
+}
+
+// ── Sunset Blaze ─────────────────────────────────────────────────────────────
+object SunsetBlaze {
+    val Background    = Color(0xFF1A0A00)
+    val Surface       = Color(0xFF2A1200)
+    val SurfaceHigh   = Color(0xFF3D1F00)
+    val Accent        = Color(0xFFFF6B35)   // vivid orange
+    val AccentGlow    = Color(0x80FF6B35)
+    val OnAccent      = Color(0xFFFFFFFF)
+    val TextPrimary   = Color(0xFFFFF3E0)
+    val TextSecondary = Color(0xFFB08060)
+    val Active        = Color(0xFF5C2000)
+    val Defeated      = Color(0xFF5A0000)
+    val Inactive      = Color(0xFF2A1200)
+}
