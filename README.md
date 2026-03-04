@@ -38,6 +38,11 @@ A beautiful, fully-featured chess clock for Android built with modern Jetpack Co
 - ⏸ Pause & resume — only the correct player can resume
 - 🔢 Move counter + centisecond display
 
----
+---!
+[timeediting](https://github.com/user-attachments/assets/c328003d-77ea-4d17-af89-459794a5dacb)
+![theme](https://github.com/user-attachments/assets/0a6e99ca-24a3-48e8-9d17-b0dc6e86cd8f)
+![overalltimer](https://github.com/user-attachments/assets/18d78322-fcde-428f-abf1-c37968aba7df)
+![deletion](https://github.com/user-attachments/assets/56ba3185-f91d-4407-8579-3db53e6139a6)
 
 Built with Kotlin & ♟️for the love of the game
+
