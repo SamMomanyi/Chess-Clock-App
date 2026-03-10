@@ -21,13 +21,13 @@ import com.example.chess_clock.model.daggerHilt.MyRepositoryImplementation
 import com.example.chess_clock.model.daggerHilt.di.AppContext
 import com.example.chess_clock.model.database.clocks.ClockFormat
 import com.example.chess_clock.ui.theme.toColorScheme
-import kotlinx.coroutines.flow.SharingStarted
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -208,10 +208,19 @@ class HomeScreenViewModel @Inject constructor(
         when (command) {
 
             is HomeScreenCommand.PlayerClicked -> {
+                // If either player has been flagged, any tap on either card
+                // should prompt a restart — not resume or start a new turn.
+                val isGameOver = _playerTimerState1.value == PlayerState.DEFEATED
+                        || _playerTimerState2.value == PlayerState.DEFEATED
+                if (isGameOver) {
+                    _uiState.value = _uiState.value.copy(showRestartDialog = true)
+                    return
+                }
+
                 when (command.playerState) {
                     PlayerState.ACTIVE   -> soundPool.play(clickSoundId, 1f, 1f, 0, 0, 1f)
                     PlayerState.INACTIVE -> command.view.playSoundEffect(SoundEffectConstants.NAVIGATION_RIGHT)
-                    PlayerState.DEFEATED -> return  // ignore taps when defeated
+                    PlayerState.DEFEATED -> return
                 }
                 when (command.activatePlayer) {
                     ActivatePlayer.ONE  -> startPlayerOne()
