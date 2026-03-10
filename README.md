@@ -42,6 +42,11 @@ A beautiful, fully-featured chess clock for Android built with modern Jetpack Co
 ![theme](https://github.com/user-attachments/assets/0a6e99ca-24a3-48e8-9d17-b0dc6e86cd8f)
 ![overalltimer](https://github.com/user-attachments/assets/18d78322-fcde-428f-abf1-c37968aba7df)
 ![deletion](https://github.com/user-attachments/assets/56ba3185-f91d-4407-8579-3db53e6139a6)
+![timerend](https://github.com/user-attachments/assets/9c6f86c0-2946-42ee-9d5b-1dd6b0275301)
+
 
 Built with Kotlin & ♟️for the love of the game
+
+
+
 
